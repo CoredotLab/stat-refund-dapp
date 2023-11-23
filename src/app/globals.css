@@ -4,7 +4,7 @@
 
 :root {
   --foreground-rgb: 0, 0, 0;
-  --background-rgb: 16, 16, 16; /* #121212의 RGB 값 */
+  --background-rgb: 18, 18, 18; /* #121212의 RGB 값 */
 }
 
 body {
