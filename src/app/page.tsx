@@ -23,10 +23,24 @@ enum KlipActionType {
   SEND_CARD = "send_card",
 }
 
+enum ConnectWalletType {
+  KAIKAS = "kaikas",
+  KLIP = "klip",
+  NONE = "none",
+}
+
+const KLAYTN_ENNODE_MAINNET = "https://public-en-cypress.klaytn.net";
+const KLAYTN_ENNODE_BAOBAB = "https://public-en-baobab.klaytn.net";
+
 export default function Home() {
   const [connectWalletModal, setConnectWalletModal] = useState(false);
   const [account, setAccount] = useState("");
   const [caver, setCaver] = useState<Caver>();
+  const [klipRequestKey, setKlipRequestKey] = useState("");
+  const [connectWalletType, setConnectWalletType] = useState<ConnectWalletType>(
+    ConnectWalletType.NONE
+  );
+  const [refundModal, setRefundModal] = useState(false);
 
   const handleConnectKaikas = async () => {
     // 모바일에서는 안됨
@@ -63,6 +77,8 @@ export default function Home() {
           const caver = new Caver(kaikas);
           setCaver(caver);
           setConnectWalletModal(false);
+          setConnectWalletType(ConnectWalletType.KAIKAS);
+          setRefundModal(true);
         } catch (error: any) {
           console.error(error);
           const { code } = error;
@@ -86,14 +102,15 @@ export default function Home() {
   };
 
   const handleConnectKlip = async () => {
-    // if (!isMobile) {
-    //   alert("클립은 모바일에서만 지원합니다.");
-    //   return;
-    // }
+    if (!isMobile) {
+      alert("클립은 모바일에서만 지원합니다.");
+      return;
+    }
 
     const prepareUrl = "https://a2a-api.klipwallet.com/v2/a2a/prepare";
 
     try {
+      let requestKeyTmp = "";
       const response = await axios
         .post(
           "https://a2a-api.klipwallet.com/v2/a2a/prepare",
@@ -112,16 +129,98 @@ export default function Home() {
           }
         )
         .then((res) => {
-          console.log(res);
           const { request_key } = res.data;
-          const requestUrl = `https://klipwallet.com/?target=/a2a?request_key=${request_key}`;
-          window.open(requestUrl);
+          if (!request_key) {
+            alert("클립 지갑 연결을 실패했습니다.1");
+            throw new Error("클립 지갑 연결을 실패했습니다.");
+          }
+          setKlipRequestKey(request_key);
+          requestKeyTmp = request_key;
         })
-        .catch((err) => {
-          console.log(err);
+        .catch((err: any) => {
+          console.error(err);
         });
+
+      // eoa 요청
+      const resultCheckInterval = setInterval(() => {
+        checkKlipAuthResult(requestKeyTmp)
+          .then((res) => {
+            clearInterval(resultCheckInterval);
+          })
+          .catch((err) => {
+            console.error("인증 결과 확인 중 오류 발생:", err);
+          });
+      }, 3000);
+
+      // deep link
+      requestKlipDeeplink(requestKeyTmp);
     } catch (error) {
       console.error(error);
+    }
+  };
+
+  const requestKlipDeeplink = (requestKey: string) => {
+    const deeplinkUrl = `kakaotalk://klipwallet/open?url=https://klipwallet.com/?target=/a2a?request_key=${requestKey}`;
+
+    window.location.href = deeplinkUrl;
+  };
+
+  const checkKlipAuthResult = async (requestKey: string) => {
+    console.log("checkKlipAuthResult", requestKey);
+    if (!requestKey) {
+      console.log("requestKey is null");
+      return;
+    }
+    console.log("requestKey is not null");
+    try {
+      const response = await axios
+        .get(
+          `https://a2a-api.klipwallet.com/v2/a2a/result?request_key=${requestKey}`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        )
+        .then((res) => {
+          console.log("res", res);
+          if (res.status !== 200) {
+            alert("클립 지갑 연결을 실패했습니다.");
+            throw new Error("클립 지갑 연결을 실패했습니다.");
+          }
+
+          const result = res.data;
+          if (!result) {
+            alert("클립 지갑 연결을 실패했습니다.");
+            throw new Error("클립 지갑 연결을 실패했습니다.");
+          }
+
+          if (result.status === "completed") {
+            const eoa = result.result?.klaytn_address;
+            if (!eoa) {
+              alert("클립 지갑 연결을 실패했습니다.3");
+              throw new Error("클립 지갑 연결을 실패했습니다.");
+            }
+            alert(`클립 지갑 연결에 성공했습니다. 지갑주소: ${eoa}`);
+            setAccount(eoa);
+            setConnectWalletModal(false);
+            setConnectWalletType(ConnectWalletType.KLIP);
+            const caver = new Caver(KLAYTN_ENNODE_MAINNET);
+            setCaver(caver);
+            setRefundModal(true);
+            return result;
+          } else {
+            console.debug("인증 대기 중 또는 실패:", result);
+            return;
+          }
+        })
+        .catch((err: any) => {
+          console.error(err);
+          return err;
+        });
+    } catch (error) {
+      console.error("인증 결과 확인 중 오류 발생:", error);
+      return error;
     }
   };
 
@@ -204,7 +303,7 @@ export default function Home() {
                 멘탈리스크
               </td>
               <td className="w-1/4 flex justify-center items-center p-[10px] border-r border-white">
-                6197<span className="ml-1 font-normal">KLAY</span>
+                5616<span className="ml-1 font-normal">KLAY</span>
               </td>
               <td className="w-1/2 flex justify-center items-center py-[10px]">
                 189만8208원{" "}
@@ -219,7 +318,7 @@ export default function Home() {
                 5424<span className="ml-1 font-normal">KLAY</span>
               </td>
               <td className="w-1/2 flex justify-center items-center py-[10px]">
-                189만8208원{" "}
+                183만3312원{" "}
                 <span className="ml-1 font-normal">상당의 KLAY</span>
               </td>
             </tr>
@@ -287,6 +386,22 @@ export default function Home() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+      {/* wallet connect modal */}
+      {refundModal && (
+        <div
+          onClick={() => setRefundModal(false)}
+          className="fixed top-0 left-0 w-full h-full z-50 bg-center bg-lightgray bg-cover bg-no-repeat bg-[url('/modal_background_img.png')] flex justify-center items-center"
+        >
+          <div
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+            className="max-w-[600px] w-full min-w-[320px] h-[360px] min-h-[325px] z-50 bg-gradient-to-r from-[#5DE7E7] via-[#5D9DF7] to-[#A05DF7] border border-transparent rounded-[15px] shadow-none mx-[10px]"
+          >
+            <div className="bg-[#16191F] w-full h-full rounded-[15px] flex flex-col justify-center items-center py-[40px] px-[20px] space-y-[59px]"></div>
           </div>
         </div>
       )}
