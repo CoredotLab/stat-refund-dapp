@@ -224,6 +224,19 @@ export default function Home() {
     }
   };
 
+  const handleConnectWalletBtn = () => {
+    // 이미 account가 있는 경우는 refundModal을 띄움
+    if (account) {
+      setRefundModal(true);
+    } else {
+      setConnectWalletModal(true);
+    }
+  };
+
+  const shortenAddress = (address: string) => {
+    return `${address.slice(0, 5)}...${address.slice(-8)}`;
+  };
+
   return (
     <main className="flex flex-col min-w-[360px] w-full font-pretendard min-h-[1047px] py-[50px] px-[30px] gap-[10px] justify-center items-center bg-[#121212]">
       <div className="min-w-[360px] w-full max-w-[1000px] min-h-[368px] max-h-[920px]">
@@ -244,7 +257,7 @@ export default function Home() {
       </div>
 
       <button
-        onClick={() => setConnectWalletModal(true)}
+        onClick={() => handleConnectWalletBtn()}
         className="flex flex-col justify-center items-center flex-shrink-0 w-[270px] h-[50px] max-w-[386px] p-2 rounded-[10px] bg-gradient-to-r from-[#47A9B1] via-[#4171A0] to-[#A25EF8] text-white text-center text-sm font-normal font-bold leading-normal my-[20px]"
       >
         지갑 연결하기
@@ -399,9 +412,80 @@ export default function Home() {
             onClick={(e) => {
               e.stopPropagation();
             }}
-            className="max-w-[600px] w-full min-w-[320px] h-[360px] min-h-[325px] z-50 bg-gradient-to-r from-[#5DE7E7] via-[#5D9DF7] to-[#A05DF7] border border-transparent rounded-[15px] shadow-none mx-[10px]"
+            className="max-w-[600px] w-full min-w-[320px] z-50 bg-gradient-to-r from-[#5DE7E7] via-[#5D9DF7] to-[#A05DF7] rounded-[15px] shadow-none mx-[10px] p-[1px]"
           >
-            <div className="bg-[#16191F] w-full h-full rounded-[15px] flex flex-col justify-center items-center py-[40px] px-[20px] space-y-[59px]"></div>
+            <div className="bg-[#16191F] w-full rounded-[15px] flex flex-col justify-center items-center pt-[20px] pb-[40px] px-[20px] space-y-[20px]">
+              {/* 지갑 */}
+              <div
+                className={
+                  `h-[24px] w-full flex` +
+                  " " +
+                  (isMobile ? "justify-center" : "justify-end")
+                }
+              >
+                <div className="flex justify-center items-center space-x-[7px] bg-gradient-to-r from-[#5DE7E7] via-[#5D9DF7] to-[#A05DF7] rounded-[100px] p-[1px]">
+                  <div className="flex px-[10px] w-full h-full bg-[#16191F] rounded-[100px] border border-transparent">
+                    <Image
+                      src="/icon_wallet.svg"
+                      alt="wallet"
+                      width={11.35}
+                      height={12}
+                    />
+                    <span className="text-[12px] text-white flex justify-center items-center font-[500px] font-normal ml-[7px]">
+                      {shortenAddress(account)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              {/* 환불안내 */}
+              <div className="flex flex-col items-center space-y-[10px] w-full">
+                <span className="text-white text-[20px] font-[700]">
+                  stat NFT 환불 안내
+                </span>
+                <span className="px-[30px] w-full text-white text-[16px] font-[400] leading-[30px]">
+                  1. stat 환불은{" "}
+                  <span className="font-[700]">stat NFT 보유자</span>에 한해서
+                  환불됩니다. <br />
+                  2. 환불하기{" "}
+                  <span className="font-[700]">원하는 NFT를 선택</span>하고{" "}
+                  <span className="font-[700]">확인 버튼</span>을 누르면
+                  환불됩니다. <br />
+                  3. 환불한 NFT는 <span className="font-[700]">2024년 1월</span>
+                  부터 순차적으로 환불될 예정입니다.
+                </span>
+              </div>
+              {/* 보유 stat NFT 목록 */}
+              <div className="w-full flex flex-col items-center px-[30px] space-y-[10px] h-[261px]">
+                <span className="text-white text-[14px] font-[500] h-[22px]">
+                  보유 NFT 목록
+                </span>
+                <div className="flex flex-col w-full min-w-[280px] py-[10px] px-[20px] justify-start items-center rounded-[10px] bg-[#0A0A0A] h-full">
+                  <span className="text-white h-[40px] flex items-center text-[16px] font-[400] leading-[40px]">
+                    NFT 번호
+                  </span>
+                  <div className="w-full h-[0.5px] bg-[#F6F8FF] mt-[2px] mb-[10px]" />
+                  {
+                    // NFT 번호
+                    [1, 2, 3, 4, 5].map((item, index) => (
+                      <div
+                        key={index}
+                        className="flex justify-between items-center w-full h-[40px] text-white text-[16px] font-[400] leading-[40px]"
+                      >
+                        <span>{item}</span>
+                        <button className="w-[20px] h-[20px] flex justify-center items-center">
+                          <Image
+                            src="/icon_check.svg"
+                            alt="check"
+                            width={20}
+                            height={20}
+                          />
+                        </button>
+                      </div>
+                    ))
+                  }
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
