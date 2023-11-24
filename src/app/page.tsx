@@ -146,7 +146,7 @@ export default function Home() {
 
       <button
         onClick={() => setConnectWalletModal(true)}
-        className="flex flex-col justify-center items-center flex-shrink-0 w-[270px] h-[50px] max-w-[386px] p-2 rounded-[10px] bg-gradient-to-r from-[#5EF8F8] via-[#5E9FF8] to-[#A25EF8] text-white text-center text-sm font-normal font-bold leading-normal my-[20px]"
+        className="flex flex-col justify-center items-center flex-shrink-0 w-[270px] h-[50px] max-w-[386px] p-2 rounded-[10px] bg-gradient-to-r from-[#47A9B1] via-[#4171A0] to-[#A25EF8] text-white text-center text-sm font-normal font-bold leading-normal my-[20px]"
       >
         지갑 연결하기
       </button>
