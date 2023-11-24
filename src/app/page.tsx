@@ -2,26 +2,141 @@
 
 import Image from "next/image";
 import { useState } from "react";
+import Caver from "caver-js";
+import { isMobile } from "react-device-detect";
+import axios from "axios";
+
+declare global {
+  interface Window {
+    klip: any;
+    klaytn: any;
+  }
+}
+
+// klip
+const bappName = "STAT NFT REFUND";
+const successLink = "https://stat-refund-dapp.vercel.app/";
+const failLink = "https://stat-refund-dapp.vercel.app/";
+
+enum KlipActionType {
+  AUTH = "auth",
+  SEND_CARD = "send_card",
+}
 
 export default function Home() {
   const [connectWalletModal, setConnectWalletModal] = useState(false);
+  const [account, setAccount] = useState("");
+  const [caver, setCaver] = useState<Caver>();
 
-  const handleConnectKaikas = () => {};
+  const handleConnectKaikas = async () => {
+    // 모바일에서는 안됨
+    if (isMobile) {
+      alert("카이카스는 모바일에서 지원하지 않습니다.");
+      return;
+    }
 
-  const handleConnectKlip = () => {};
+    // kaikas 있는지 확인
+    if (window.klaytn) {
+      const kaikas = window.klaytn;
+      // kaikas가 설치되어 있지 않으면 설치 페이지로 이동
+      if (!kaikas.isKaikas) {
+        handleNotInstalledKaikas();
+      } else {
+        // kaikas가 설치되어 있으면 지갑 연결
+        try {
+          const accounts = await kaikas.enable();
+          const account = accounts[0];
+          // networkVersion: 8217. 아닐 경우 네트워크 변경
+          if (kaikas.networkVersion !== "8217") {
+            kaikas.request({
+              method: "wallet_switchEthereumChain",
+              params: [{ chainId: "0x2019" }],
+            });
+          }
+          setAccount(account);
+
+          kaikas.on("accountsChanged", (accounts: any) => {
+            const account = accounts[0];
+            setAccount(account);
+          });
+
+          const caver = new Caver(kaikas);
+          setCaver(caver);
+          setConnectWalletModal(false);
+        } catch (error: any) {
+          console.error(error);
+          const { code } = error;
+          if (code === -32603) {
+            alert("지갑 연결을 취소하셨습니다.");
+          }
+        }
+      }
+    } else {
+      // kaikas가 설치되어 있지 않으면 설치 페이지로 이동
+      handleNotInstalledKaikas();
+    }
+  };
+
+  const handleNotInstalledKaikas = () => {
+    window.open(
+      "https://chrome.google.com/webstore/detail/kaikas/jblndlipeogpafnldhgmapagcccfchpi"
+    );
+    alert("카이카스를 설치해주세요.");
+    setConnectWalletModal(false);
+  };
+
+  const handleConnectKlip = async () => {
+    // if (!isMobile) {
+    //   alert("클립은 모바일에서만 지원합니다.");
+    //   return;
+    // }
+
+    const prepareUrl = "https://a2a-api.klipwallet.com/v2/a2a/prepare";
+
+    try {
+      const response = await axios
+        .post(
+          "https://a2a-api.klipwallet.com/v2/a2a/prepare",
+          {
+            bapp: { name: "My BApp" },
+            callback: {
+              success: "mybapp://klipwallet/success",
+              fail: "mybapp://klipwallet/fail",
+            },
+            type: "auth",
+          },
+          {
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        )
+        .then((res) => {
+          console.log(res);
+          const { request_key } = res.data;
+          const requestUrl = `https://klipwallet.com/?target=/a2a?request_key=${request_key}`;
+          window.open(requestUrl);
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   return (
-    <main className="flex flex-col min-w-[360px] font-pretendard min-h-[1047px] py-[50px] px-[30px] justify-center items-center gap-[37px] bg-[#121212]">
-      <div className="min-w-[360px] max-w-[1200px] min-h-[368px] max-h-[920px]">
+    <main className="flex flex-col min-w-[360px] w-full font-pretendard min-h-[1047px] py-[50px] px-[30px] gap-[10px] justify-center items-center bg-[#121212]">
+      <div className="min-w-[360px] w-full max-w-[1000px] min-h-[368px] max-h-[920px]">
         <Image
-          src="/main_image.png"
+          src="/main_image2.png"
           alt="main"
           width={4096}
           height={3750}
           quality={100}
         ></Image>
       </div>
-      <div className="flex-grow flex-shrink-0 flex-basis-0 py-[20px]">
+      <div className="w-full flex items-center justify-center py-[20px]">
         <p className="text-white text-center text-sm font-normal leading-[16px]">
           그동안 탑트레이더 카드를 사랑해주셔서 감사합니다.
           <br /> 곧 <span className="font-bold">새로운 스탯 트레이더 카드</span>
@@ -31,7 +146,7 @@ export default function Home() {
 
       <button
         onClick={() => setConnectWalletModal(true)}
-        className="flex flex-col justify-center items-center gap-2 flex-shrink-0 w-[270px] h-[50px] max-w-[386px] p-2 rounded-[10px] bg-gradient-to-r from-[#5EF8F8] via-[#5E9FF8] to-[#A25EF8] text-white text-center text-sm font-normal font-bold leading-normal my-[37px]"
+        className="flex flex-col justify-center items-center flex-shrink-0 w-[270px] h-[50px] max-w-[386px] p-2 rounded-[10px] bg-gradient-to-r from-[#5EF8F8] via-[#5E9FF8] to-[#A25EF8] text-white text-center text-sm font-normal font-bold leading-normal my-[20px]"
       >
         지갑 연결하기
       </button>
@@ -58,18 +173,18 @@ export default function Home() {
               </th>
             </tr>
           </thead>
-          <tbody className="font-normal text-[12px]">
+          <tbody className="font-normal text-[11px]">
             <tr className="flex border-b border-white">
               <td className="w-1/4 flex justify-center items-center p-[4px] border-r border-white">
                 모멘텀 스켈퍼
               </td>
               <td className="w-1/4 flex justify-center items-center p-[10px] border-r border-white">
                 10451
-                <span className="text-[10px] font-normal">KLAY</span>
+                <span className="ml-1 font-normal">KLAY</span>
               </td>
               <td className="w-1/2 flex justify-center items-center py-[10px]">
                 353만2438원{" "}
-                <span className="text-[10px] font-normal">상당의 암호화폐</span>
+                <span className="ml-1 font-normal">상당의 KLAY</span>
               </td>
             </tr>
             <tr className="flex border-b border-white">
@@ -77,11 +192,11 @@ export default function Home() {
                 박리다메
               </td>
               <td className="w-1/4 flex justify-center items-center p-[10px] border-r border-white">
-                6197<span className="text-[10px] font-normal">KLAY</span>
+                6197<span className="ml-1 font-normal">KLAY</span>
               </td>
               <td className="w-1/2 flex justify-center items-center py-[10px]">
                 209만4586원{" "}
-                <span className="text-[10px] font-normal">상당의 암호화폐</span>
+                <span className="ml-1 font-normal">상당의 KLAY</span>
               </td>
             </tr>
             <tr className="flex border-b border-white">
@@ -89,11 +204,11 @@ export default function Home() {
                 멘탈리스크
               </td>
               <td className="w-1/4 flex justify-center items-center p-[10px] border-r border-white">
-                6197<span className="text-[10px] font-normal">KLAY</span>
+                6197<span className="ml-1 font-normal">KLAY</span>
               </td>
               <td className="w-1/2 flex justify-center items-center py-[10px]">
                 189만8208원{" "}
-                <span className="text-[10px] font-normal">상당의 암호화폐</span>
+                <span className="ml-1 font-normal">상당의 KLAY</span>
               </td>
             </tr>
             <tr className="flex border-b border-white">
@@ -101,11 +216,11 @@ export default function Home() {
                 흑구
               </td>
               <td className="w-1/4 flex justify-center items-center p-[10px] border-r border-white">
-                5424<span className="text-[10px] font-normal">KLAY</span>
+                5424<span className="ml-1 font-normal">KLAY</span>
               </td>
               <td className="w-1/2 flex justify-center items-center py-[10px]">
                 189만8208원{" "}
-                <span className="text-[10px] font-normal">상당의 암호화폐</span>
+                <span className="ml-1 font-normal">상당의 KLAY</span>
               </td>
             </tr>
             <tr className="flex border-b border-white">
@@ -113,11 +228,11 @@ export default function Home() {
                 라이노
               </td>
               <td className="w-1/4 flex justify-center items-center p-[10px] border-r border-white">
-                5318<span className="text-[10px] font-normal">KLAY</span>
+                5318<span className="ml-1 font-normal">KLAY</span>
               </td>
               <td className="w-1/2 flex justify-center items-center py-[10px]">
                 179만7484원{" "}
-                <span className="text-[10px] font-normal">상당의 암호화폐</span>
+                <span className="ml-1 font-normal">상당의 KLAY</span>
               </td>
             </tr>
           </tbody>
