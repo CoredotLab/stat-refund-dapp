@@ -1,12 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
-import Caver from "caver-js";
+import { useEffect, useState } from "react";
+import Caver, { AbiItem } from "caver-js";
 import { isMobile } from "react-device-detect";
 import axios from "axios";
 import { CircularProgress } from "@nextui-org/react";
 import { NextUIProvider } from "@nextui-org/react";
+import StatNFTABI from "../StatNFTABI.json";
 
 declare global {
   interface Window {
@@ -38,6 +39,10 @@ type StatNFT = {
 
 const KLAYTN_ENNODE_MAINNET = "https://public-en-cypress.klaytn.net";
 const KLAYTN_ENNODE_BAOBAB = "https://public-en-baobab.klaytn.net";
+const MAINNET_STAT_NFT_CONTRACT_ADDRESS =
+  "0x96e423d5cf07bbd8e13a1cee4fe390dcd4b3fb6b";
+const BAOBAB_STAT_NFT_CONTRACT_ADDRESS =
+  "0xBd34Ea3FEe2c1F35F0950A8D5D957fF1e02cAC2E";
 
 export default function Home() {
   const [connectWalletModal, setConnectWalletModal] = useState(false);
@@ -48,136 +53,7 @@ export default function Home() {
     ConnectWalletType.NONE
   );
   const [refundModal, setRefundModal] = useState(false);
-  const [tokens, setTokens] = useState<StatNFT[]>([
-    {
-      tokenId: 1,
-      refundAmount: 100,
-    },
-    {
-      tokenId: 2,
-      refundAmount: 200,
-    },
-    {
-      tokenId: 3,
-      refundAmount: 300,
-    },
-    {
-      tokenId: 4,
-      refundAmount: 400,
-    },
-    {
-      tokenId: 5,
-      refundAmount: 500,
-    },
-    {
-      tokenId: 6,
-      refundAmount: 600,
-    },
-    {
-      tokenId: 7,
-      refundAmount: 700,
-    },
-    {
-      tokenId: 8,
-      refundAmount: 800,
-    },
-    {
-      tokenId: 9,
-      refundAmount: 900,
-    },
-    {
-      tokenId: 10,
-      refundAmount: 1000,
-    },
-    {
-      tokenId: 11,
-      refundAmount: 1100,
-    },
-    {
-      tokenId: 12,
-      refundAmount: 1200,
-    },
-    {
-      tokenId: 13,
-      refundAmount: 1300,
-    },
-    {
-      tokenId: 14,
-      refundAmount: 1400,
-    },
-    {
-      tokenId: 15,
-      refundAmount: 1500,
-    },
-    {
-      tokenId: 16,
-      refundAmount: 1600,
-    },
-    {
-      tokenId: 17,
-      refundAmount: 1700,
-    },
-    {
-      tokenId: 18,
-      refundAmount: 1800,
-    },
-    {
-      tokenId: 19,
-      refundAmount: 1900,
-    },
-    {
-      tokenId: 20,
-      refundAmount: 2000,
-    },
-    {
-      tokenId: 21,
-      refundAmount: 2100,
-    },
-    {
-      tokenId: 22,
-      refundAmount: 2200,
-    },
-    {
-      tokenId: 23,
-      refundAmount: 2300,
-    },
-    {
-      tokenId: 24,
-      refundAmount: 2400,
-    },
-    {
-      tokenId: 25,
-      refundAmount: 2500,
-    },
-    {
-      tokenId: 26,
-      refundAmount: 2600,
-    },
-    {
-      tokenId: 27,
-      refundAmount: 2700,
-    },
-    {
-      tokenId: 28,
-      refundAmount: 2800,
-    },
-    {
-      tokenId: 29,
-      refundAmount: 2900,
-    },
-    {
-      tokenId: 30,
-      refundAmount: 3000,
-    },
-    {
-      tokenId: 31,
-      refundAmount: 3100,
-    },
-    {
-      tokenId: 32,
-      refundAmount: 3200,
-    },
-  ]);
+  const [tokens, setTokens] = useState<StatNFT[]>([]);
   const [checkedToken, setCheckedToken] = useState<StatNFT | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [completModal, setCompletModal] = useState(false);
@@ -200,13 +76,25 @@ export default function Home() {
         try {
           const accounts = await kaikas.enable();
           const account = accounts[0];
-          // networkVersion: 8217. 아닐 경우 네트워크 변경
-          if (kaikas.networkVersion !== "8217") {
-            kaikas.request({
-              method: "wallet_switchEthereumChain",
-              params: [{ chainId: "0x2019" }],
-            });
-          }
+          // TODO: networkVersion: 8217. 아닐 경우 네트워크 변경
+          // if (kaikas.networkVersion !== "8217") {
+          //   await kaikas
+          //     .request({
+          //       method: "wallet_switchEthereumChain",
+          //       params: [{ chainId: "0x2019" }],
+          //     })
+          //     .then((res: any) => {
+          //       console.log("res", res);
+          //     })
+          //     .catch((err: any) => {
+          //       console.error("err", err);
+          //       const { code } = err;
+          //       if (code === 4001) {
+          //         alert("메인넷에서만 환불이 가능합니다.");
+          //         throw new Error("메인넷에서만 환불이 가능합니다.");
+          //       }
+          //     });
+          // }
           setAccount(account);
 
           kaikas.on("accountsChanged", (accounts: any) => {
@@ -220,11 +108,13 @@ export default function Home() {
           setConnectWalletType(ConnectWalletType.KAIKAS);
           setRefundModal(true);
         } catch (error: any) {
-          console.error(error);
+          console.error("여기", error);
           const { code } = error;
           if (code === -32603) {
             alert("지갑 연결을 취소하셨습니다.");
           }
+
+          setRefundModal(false);
         }
       }
     } else {
@@ -365,12 +255,7 @@ export default function Home() {
   };
 
   const handleConnectWalletBtn = () => {
-    // 이미 account가 있는 경우는 refundModal을 띄움
-    if (account) {
-      setRefundModal(true);
-    } else {
-      setConnectWalletModal(true);
-    }
+    setConnectWalletModal(true);
   };
 
   const shortenAddress = (address: string) => {
@@ -390,6 +275,89 @@ export default function Home() {
   const getFormattedTokenId = (tokenId: number) => {
     return tokenId.toString().padStart(3, "0");
   };
+
+  useEffect(() => {
+    const doAsync = async () => {
+      try {
+        if (caver && account) {
+          const statContract = caver.contract.create(
+            StatNFTABI as AbiItem[],
+            BAOBAB_STAT_NFT_CONTRACT_ADDRESS
+          );
+          const tokenBalance = await statContract.methods
+            .balanceOf(account)
+            .call();
+          console.log("tokenBalance", tokenBalance);
+
+          const tokenIds = [];
+          for (let i = 0; i < tokenBalance; i++) {
+            const tokenId = await statContract.methods
+              .tokenOfOwnerByIndex(account, i)
+              .call();
+            tokenIds.push(tokenId);
+          }
+          console.log("tokenIds", tokenIds);
+          // tokenUri 가져오기
+          const tokenUris = [];
+          for (let i = 0; i < tokenIds.length; i++) {
+            const tokenUri = await statContract.methods
+              .tokenURI(tokenIds[i])
+              .call();
+            tokenUris.push(tokenUri);
+          }
+          console.log("tokenUris", tokenUris);
+          // token URI 에서 attributes[] 에서 trait_type이 "트레이더"의 value 가져오기
+          const traders = [];
+          for (let i = 0; i < tokenUris.length; i++) {
+            const tokenUri = tokenUris[i];
+            const response = await axios.get(tokenUri);
+            const { attributes } = response.data;
+            const trader = attributes.find(
+              (attribute: any) => attribute.trait_type === "트레이더"
+            );
+            traders.push(trader);
+          }
+
+          // 모멘텀 스켈퍼 = 10451 KLAY, 박리다메 = 6197 KLAY, 멘탈리스크 = 5616 KLAY, 흑구 = 5424 KLAY, 라이노 = 5318 KLAY
+          const refundAmounts = [];
+          for (let i = 0; i < traders.length; i++) {
+            const trader = traders[i];
+            if (trader.value === "모멘텀 스켈퍼") {
+              refundAmounts.push(10451);
+            } else if (trader.value === "박리다메") {
+              refundAmounts.push(6197);
+            } else if (trader.value === "멘탈리스크") {
+              refundAmounts.push(5616);
+            } else if (trader.value === "흑구") {
+              refundAmounts.push(5424);
+            } else if (trader.value === "라이노") {
+              refundAmounts.push(5318);
+            } else {
+              refundAmounts.push(100);
+            }
+          }
+
+          // tokenIds, refundAmounts 합치기
+          const tokens = [];
+          for (let i = 0; i < tokenIds.length; i++) {
+            const token = {
+              tokenId: tokenIds[i],
+              refundAmount: refundAmounts[i],
+            };
+            tokens.push(token);
+          }
+
+          setTokens(tokens);
+          console.log("traders", traders);
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    if (caver && account) {
+      doAsync();
+    }
+  }, [caver, account]);
 
   return (
     <NextUIProvider>
@@ -687,7 +655,10 @@ export default function Home() {
                 {/* 취소하기 / 환불하기 버튼 */}
                 <div className="flex justify-center py-[10px] space-x-[5px] items-center w-full">
                   {/* 취소하기 */}
-                  <button className="min-w-[124px] flex justify-center items-center h-[60px] py-[18px] px-[26px] text-[20px] font-[700] text-[#808080]">
+                  <button
+                    onClick={() => setRefundModal(false)}
+                    className="min-w-[124px] flex justify-center items-center h-[60px] py-[18px] px-[26px] text-[20px] font-[700] text-[#808080]"
+                  >
                     취소하기
                   </button>
                   {/* 환불하기 */}
