@@ -9,8 +9,10 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@nextui-org/react": "^2.2.9",
     "axios": "^1.6.2",
     "caver-js": "1.8.2",
+    "framer-motion": "^10.16.5",
     "next": "14.0.3",
     "react": "^18",
     "react-device-detect": "^2.2.3",

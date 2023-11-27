@@ -5,6 +5,8 @@ import { useState } from "react";
 import Caver from "caver-js";
 import { isMobile } from "react-device-detect";
 import axios from "axios";
+import { CircularProgress } from "@nextui-org/react";
+import { NextUIProvider } from "@nextui-org/react";
 
 declare global {
   interface Window {
@@ -29,6 +31,11 @@ enum ConnectWalletType {
   NONE = "none",
 }
 
+type StatNFT = {
+  tokenId: number;
+  refundAmount: number;
+};
+
 const KLAYTN_ENNODE_MAINNET = "https://public-en-cypress.klaytn.net";
 const KLAYTN_ENNODE_BAOBAB = "https://public-en-baobab.klaytn.net";
 
@@ -41,6 +48,139 @@ export default function Home() {
     ConnectWalletType.NONE
   );
   const [refundModal, setRefundModal] = useState(false);
+  const [tokens, setTokens] = useState<StatNFT[]>([
+    {
+      tokenId: 1,
+      refundAmount: 100,
+    },
+    {
+      tokenId: 2,
+      refundAmount: 200,
+    },
+    {
+      tokenId: 3,
+      refundAmount: 300,
+    },
+    {
+      tokenId: 4,
+      refundAmount: 400,
+    },
+    {
+      tokenId: 5,
+      refundAmount: 500,
+    },
+    {
+      tokenId: 6,
+      refundAmount: 600,
+    },
+    {
+      tokenId: 7,
+      refundAmount: 700,
+    },
+    {
+      tokenId: 8,
+      refundAmount: 800,
+    },
+    {
+      tokenId: 9,
+      refundAmount: 900,
+    },
+    {
+      tokenId: 10,
+      refundAmount: 1000,
+    },
+    {
+      tokenId: 11,
+      refundAmount: 1100,
+    },
+    {
+      tokenId: 12,
+      refundAmount: 1200,
+    },
+    {
+      tokenId: 13,
+      refundAmount: 1300,
+    },
+    {
+      tokenId: 14,
+      refundAmount: 1400,
+    },
+    {
+      tokenId: 15,
+      refundAmount: 1500,
+    },
+    {
+      tokenId: 16,
+      refundAmount: 1600,
+    },
+    {
+      tokenId: 17,
+      refundAmount: 1700,
+    },
+    {
+      tokenId: 18,
+      refundAmount: 1800,
+    },
+    {
+      tokenId: 19,
+      refundAmount: 1900,
+    },
+    {
+      tokenId: 20,
+      refundAmount: 2000,
+    },
+    {
+      tokenId: 21,
+      refundAmount: 2100,
+    },
+    {
+      tokenId: 22,
+      refundAmount: 2200,
+    },
+    {
+      tokenId: 23,
+      refundAmount: 2300,
+    },
+    {
+      tokenId: 24,
+      refundAmount: 2400,
+    },
+    {
+      tokenId: 25,
+      refundAmount: 2500,
+    },
+    {
+      tokenId: 26,
+      refundAmount: 2600,
+    },
+    {
+      tokenId: 27,
+      refundAmount: 2700,
+    },
+    {
+      tokenId: 28,
+      refundAmount: 2800,
+    },
+    {
+      tokenId: 29,
+      refundAmount: 2900,
+    },
+    {
+      tokenId: 30,
+      refundAmount: 3000,
+    },
+    {
+      tokenId: 31,
+      refundAmount: 3100,
+    },
+    {
+      tokenId: 32,
+      refundAmount: 3200,
+    },
+  ]);
+  const [checkedToken, setCheckedToken] = useState<StatNFT | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [completModal, setCompletModal] = useState(false);
 
   const handleConnectKaikas = async () => {
     // 모바일에서는 안됨
@@ -237,258 +377,369 @@ export default function Home() {
     return `${address.slice(0, 5)}...${address.slice(-8)}`;
   };
 
-  return (
-    <main className="flex flex-col min-w-[360px] w-full font-pretendard min-h-[1047px] py-[50px] px-[30px] gap-[10px] justify-center items-center bg-[#121212]">
-      <div className="min-w-[360px] w-full max-w-[1000px] min-h-[368px] max-h-[920px]">
-        <Image
-          src="/main_image2.png"
-          alt="main"
-          width={4096}
-          height={3750}
-          quality={100}
-        ></Image>
-      </div>
-      <div className="w-full flex items-center justify-center py-[20px]">
-        <p className="text-white text-center text-sm font-normal leading-[16px]">
-          그동안 탑트레이더 카드를 사랑해주셔서 감사합니다.
-          <br /> 곧 <span className="font-bold">새로운 스탯 트레이더 카드</span>
-          로 돌아오겠습니다.
-        </p>
-      </div>
+  const handleClickToken = (token: StatNFT) => {
+    console.log("handleClickToken", token);
+    // 클릭한 token이 이미 선택된 token이면 선택 해제
+    if (checkedToken?.tokenId === token.tokenId) {
+      setCheckedToken(null);
+    } else {
+      setCheckedToken(token);
+    }
+  };
 
-      <button
-        onClick={() => handleConnectWalletBtn()}
-        className="flex flex-col justify-center items-center flex-shrink-0 w-[270px] h-[50px] max-w-[386px] p-2 rounded-[10px] bg-gradient-to-r from-[#47A9B1] via-[#4171A0] to-[#A25EF8] text-white text-center text-sm font-normal font-bold leading-normal my-[20px]"
-      >
-        지갑 연결하기
-      </button>
-      {/* NFT 보상정책 */}
-      <div className="flex flex-col w-full min-w-[300px] max-w-[1028px] py-[40px] justify-center items-start gap-[16px]">
-        <span className="font-pretendard text-[20px] font-bold leading-normal bg-clip-text text-transparent bg-gradient-to-r from-[#5EF8F8] via-[#5E9FF8] to-[#A25EF8]">
-          NFT 보상정책
-        </span>
-        <table className="w-full text-xs text-white font-pretendard font-bold">
-          <thead>
-            <tr className="flex border-b border-white">
-              <th className="w-1/4 py-[21px] px-[10px] flex justify-center items-center border-r border-white bg-gradient-to-r from-[#337175] to-[#305B6D]">
-                NFT명
-              </th>
-              <th className="w-1/4 py-[21px] px-[10px] flex justify-center items-center border-r border-white bg-gradient-to-r from-[#305B6D] to-[#2E4A66]">
-                최종낙찰가
-              </th>
-              <th className="w-1/2 py-[11px] flex flex-col justify-center items-center bg-gradient-to-r from-[#2E4866] to-[#68409B]">
-                NFT당 보상금액
-                <br />
-                <span className="text-[10px] font-normal">
-                  기준:22.8.20 KLAY 종가[338원]
-                </span>
-              </th>
-            </tr>
-          </thead>
-          <tbody className="font-normal text-[11px]">
-            <tr className="flex border-b border-white">
-              <td className="w-1/4 flex justify-center items-center p-[4px] border-r border-white">
-                모멘텀 스켈퍼
-              </td>
-              <td className="w-1/4 flex justify-center items-center p-[10px] border-r border-white">
-                10451
-                <span className="ml-1 font-normal">KLAY</span>
-              </td>
-              <td className="w-1/2 flex justify-center items-center py-[10px]">
-                353만2438원{" "}
-                <span className="ml-1 font-normal">상당의 KLAY</span>
-              </td>
-            </tr>
-            <tr className="flex border-b border-white">
-              <td className="w-1/4 flex justify-center items-center p-[10px] border-r border-white">
-                박리다메
-              </td>
-              <td className="w-1/4 flex justify-center items-center p-[10px] border-r border-white">
-                6197<span className="ml-1 font-normal">KLAY</span>
-              </td>
-              <td className="w-1/2 flex justify-center items-center py-[10px]">
-                209만4586원{" "}
-                <span className="ml-1 font-normal">상당의 KLAY</span>
-              </td>
-            </tr>
-            <tr className="flex border-b border-white">
-              <td className="w-1/4 flex justify-center items-center p-[10px] border-r border-white">
-                멘탈리스크
-              </td>
-              <td className="w-1/4 flex justify-center items-center p-[10px] border-r border-white">
-                5616<span className="ml-1 font-normal">KLAY</span>
-              </td>
-              <td className="w-1/2 flex justify-center items-center py-[10px]">
-                189만8208원{" "}
-                <span className="ml-1 font-normal">상당의 KLAY</span>
-              </td>
-            </tr>
-            <tr className="flex border-b border-white">
-              <td className="w-1/4 flex justify-center items-center p-[10px] border-r border-white">
-                흑구
-              </td>
-              <td className="w-1/4 flex justify-center items-center p-[10px] border-r border-white">
-                5424<span className="ml-1 font-normal">KLAY</span>
-              </td>
-              <td className="w-1/2 flex justify-center items-center py-[10px]">
-                183만3312원{" "}
-                <span className="ml-1 font-normal">상당의 KLAY</span>
-              </td>
-            </tr>
-            <tr className="flex border-b border-white">
-              <td className="w-1/4 flex justify-center items-center p-[10px] border-r border-white">
-                라이노
-              </td>
-              <td className="w-1/4 flex justify-center items-center p-[10px] border-r border-white">
-                5318<span className="ml-1 font-normal">KLAY</span>
-              </td>
-              <td className="w-1/2 flex justify-center items-center py-[10px]">
-                179만7484원{" "}
-                <span className="ml-1 font-normal">상당의 KLAY</span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      {/* wallet connect modal */}
-      {connectWalletModal && (
-        <div
-          onClick={() => setConnectWalletModal(false)}
-          className="fixed top-0 left-0 w-full h-full z-50 bg-center bg-lightgray bg-cover bg-no-repeat bg-[url('/modal_background_img.png')] flex justify-center items-center"
+  const getFormattedTokenId = (tokenId: number) => {
+    return tokenId.toString().padStart(3, "0");
+  };
+
+  return (
+    <NextUIProvider>
+      <main className="flex flex-col min-w-[360px] w-full font-pretendard min-h-[1047px] py-[50px] px-[30px] gap-[10px] justify-center items-center bg-[#121212]">
+        <div className="min-w-[360px] w-full max-w-[1000px] min-h-[368px] max-h-[920px]">
+          <Image
+            src="/main_image2.png"
+            alt="main"
+            width={4096}
+            height={3750}
+            quality={100}
+          ></Image>
+        </div>
+        <div className="w-full flex items-center justify-center py-[20px]">
+          <p className="text-white text-center text-sm font-normal leading-[16px]">
+            그동안 탑트레이더 카드를 사랑해주셔서 감사합니다.
+            <br /> 곧{" "}
+            <span className="font-bold">새로운 스탯 트레이더 카드</span>로
+            돌아오겠습니다.
+          </p>
+        </div>
+
+        <button
+          onClick={() => handleConnectWalletBtn()}
+          className="flex flex-col justify-center items-center flex-shrink-0 w-[270px] h-[50px] max-w-[386px] p-2 rounded-[10px] bg-gradient-to-r from-[#47A9B1] via-[#4171A0] to-[#A25EF8] text-white text-center text-sm font-normal font-bold leading-normal my-[20px]"
         >
-          <div
-            onClick={(e) => {
-              e.stopPropagation();
-            }}
-            className="max-w-[600px] w-full min-w-[320px] h-[360px] min-h-[325px] z-50 bg-gradient-to-r from-[#5DE7E7] via-[#5D9DF7] to-[#A05DF7] border border-transparent rounded-[15px] shadow-none mx-[10px]"
-          >
-            <div className="bg-[#16191F] w-full h-full rounded-[15px] flex flex-col justify-center items-center py-[40px] px-[20px] space-y-[59px]">
-              <span className="text-white text-center text-[18px] font-normal leading-normal mx-[40px]">
-                Stat NFT를 보유하고 있는 지갑을 선택해주세요.
-              </span>
-              <div className="flex w-full h-full max-h-[300px] px-[10px] space-x-[20px] items-center">
-                <button
-                  onClick={() => handleConnectKaikas()}
-                  className="flex flex-col justify-center items-center rounded-[10px] bg-[#D9D9D9] h-full w-full space-y-[30px]"
-                >
-                  <div className="w-[86.202px] h-[71.938px] flex justify-center items-center">
-                    <Image
-                      src={"/logo_kaikas.png"}
-                      width={58.295}
-                      height={53.533}
-                      alt="kaikas"
-                    />
-                  </div>
-                  <span className="text-[16px] font-[700]">
-                    카이카스 연결하기
+          지갑 연결하기
+        </button>
+        {/* NFT 보상정책 */}
+        <div className="flex flex-col w-full min-w-[300px] max-w-[1028px] py-[40px] justify-center items-start gap-[16px]">
+          <span className="font-pretendard text-[20px] font-bold leading-normal bg-clip-text text-transparent bg-gradient-to-r from-[#5EF8F8] via-[#5E9FF8] to-[#A25EF8]">
+            NFT 보상정책
+          </span>
+          <table className="w-full text-xs text-white font-pretendard font-bold">
+            <thead>
+              <tr className="flex border-b border-white">
+                <th className="w-1/4 py-[21px] px-[10px] flex justify-center items-center border-r border-white bg-gradient-to-r from-[#337175] to-[#305B6D]">
+                  NFT명
+                </th>
+                <th className="w-1/4 py-[21px] px-[10px] flex justify-center items-center border-r border-white bg-gradient-to-r from-[#305B6D] to-[#2E4A66]">
+                  최종낙찰가
+                </th>
+                <th className="w-1/2 py-[11px] flex flex-col justify-center items-center bg-gradient-to-r from-[#2E4866] to-[#68409B]">
+                  NFT당 보상금액
+                  <br />
+                  <span className="text-[10px] font-normal">
+                    기준:22.8.20 KLAY 종가[338원]
                   </span>
-                </button>
-                <button
-                  onClick={() => handleConnectKlip()}
-                  className="flex flex-col justify-center items-center rounded-[10px] bg-[#D9D9D9] h-full w-full space-y-[30px]"
-                >
-                  <div className="w-[86.202px] h-[71.938px] flex justify-center items-center">
-                    <Image
-                      src={"/logo_klip.png"}
-                      width={86.202}
-                      height={71.938}
-                      alt="klip"
-                    />
-                  </div>
-                  <span className="text-[16px] font-[700]">클립 연결하기</span>
-                </button>
+                </th>
+              </tr>
+            </thead>
+            <tbody className="font-normal text-[11px]">
+              <tr className="flex border-b border-white">
+                <td className="w-1/4 flex justify-center items-center p-[4px] border-r border-white">
+                  모멘텀 스켈퍼
+                </td>
+                <td className="w-1/4 flex justify-center items-center p-[10px] border-r border-white">
+                  10451
+                  <span className="ml-1 font-normal">KLAY</span>
+                </td>
+                <td className="w-1/2 flex justify-center items-center py-[10px]">
+                  353만2438원{" "}
+                  <span className="ml-1 font-normal">상당의 KLAY</span>
+                </td>
+              </tr>
+              <tr className="flex border-b border-white">
+                <td className="w-1/4 flex justify-center items-center p-[10px] border-r border-white">
+                  박리다메
+                </td>
+                <td className="w-1/4 flex justify-center items-center p-[10px] border-r border-white">
+                  6197<span className="ml-1 font-normal">KLAY</span>
+                </td>
+                <td className="w-1/2 flex justify-center items-center py-[10px]">
+                  209만4586원{" "}
+                  <span className="ml-1 font-normal">상당의 KLAY</span>
+                </td>
+              </tr>
+              <tr className="flex border-b border-white">
+                <td className="w-1/4 flex justify-center items-center p-[10px] border-r border-white">
+                  멘탈리스크
+                </td>
+                <td className="w-1/4 flex justify-center items-center p-[10px] border-r border-white">
+                  5616<span className="ml-1 font-normal">KLAY</span>
+                </td>
+                <td className="w-1/2 flex justify-center items-center py-[10px]">
+                  189만8208원{" "}
+                  <span className="ml-1 font-normal">상당의 KLAY</span>
+                </td>
+              </tr>
+              <tr className="flex border-b border-white">
+                <td className="w-1/4 flex justify-center items-center p-[10px] border-r border-white">
+                  흑구
+                </td>
+                <td className="w-1/4 flex justify-center items-center p-[10px] border-r border-white">
+                  5424<span className="ml-1 font-normal">KLAY</span>
+                </td>
+                <td className="w-1/2 flex justify-center items-center py-[10px]">
+                  183만3312원{" "}
+                  <span className="ml-1 font-normal">상당의 KLAY</span>
+                </td>
+              </tr>
+              <tr className="flex border-b border-white">
+                <td className="w-1/4 flex justify-center items-center p-[10px] border-r border-white">
+                  라이노
+                </td>
+                <td className="w-1/4 flex justify-center items-center p-[10px] border-r border-white">
+                  5318<span className="ml-1 font-normal">KLAY</span>
+                </td>
+                <td className="w-1/2 flex justify-center items-center py-[10px]">
+                  179만7484원{" "}
+                  <span className="ml-1 font-normal">상당의 KLAY</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        {/* wallet connect modal */}
+        {connectWalletModal && (
+          <div
+            onClick={() => setConnectWalletModal(false)}
+            className="fixed top-0 left-0 w-full h-full z-50 bg-center bg-lightgray bg-cover bg-no-repeat bg-[url('/modal_background_img.png')] flex justify-center items-center"
+          >
+            <div
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
+              className="max-w-[600px] w-full min-w-[320px] h-[360px] min-h-[325px] z-50 bg-gradient-to-r from-[#5DE7E7] via-[#5D9DF7] to-[#A05DF7] border border-transparent rounded-[15px] shadow-none mx-[10px]"
+            >
+              <div className="bg-[#16191F] w-full h-full rounded-[15px] flex flex-col justify-center items-center py-[40px] px-[20px] space-y-[59px]">
+                <span className="text-white text-center text-[18px] font-normal leading-normal mx-[40px]">
+                  Stat NFT를 보유하고 있는 지갑을 선택해주세요.
+                </span>
+                <div className="flex w-full h-full max-h-[300px] px-[10px] space-x-[20px] items-center">
+                  <button
+                    onClick={() => handleConnectKaikas()}
+                    className="flex flex-col justify-center items-center rounded-[10px] bg-[#D9D9D9] h-full w-full space-y-[30px]"
+                  >
+                    <div className="w-[86.202px] h-[71.938px] flex justify-center items-center">
+                      <Image
+                        src={"/logo_kaikas.png"}
+                        width={58.295}
+                        height={53.533}
+                        alt="kaikas"
+                      />
+                    </div>
+                    <span className="text-[16px] font-[700]">
+                      카이카스 연결하기
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => handleConnectKlip()}
+                    className="flex flex-col justify-center items-center rounded-[10px] bg-[#D9D9D9] h-full w-full space-y-[30px]"
+                  >
+                    <div className="w-[86.202px] h-[71.938px] flex justify-center items-center">
+                      <Image
+                        src={"/logo_klip.png"}
+                        width={86.202}
+                        height={71.938}
+                        alt="klip"
+                      />
+                    </div>
+                    <span className="text-[16px] font-[700]">
+                      클립 연결하기
+                    </span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
-      {/* wallet connect modal */}
-      {refundModal && (
-        <div
-          onClick={() => setRefundModal(false)}
-          className="fixed top-0 left-0 w-full h-full z-50 bg-center bg-lightgray bg-cover bg-no-repeat bg-[url('/modal_background_img.png')] flex justify-center items-center"
-        >
+        )}
+        {/* wallet connect modal */}
+        {refundModal && (
           <div
-            onClick={(e) => {
-              e.stopPropagation();
-            }}
-            className="max-w-[600px] w-full min-w-[320px] z-50 bg-gradient-to-r from-[#5DE7E7] via-[#5D9DF7] to-[#A05DF7] rounded-[15px] shadow-none mx-[10px] p-[1px]"
+            onClick={() => setRefundModal(false)}
+            className="fixed top-0 left-0 w-full h-full z-50 bg-center bg-lightgray bg-cover bg-no-repeat bg-[url('/modal_background_img.png')] flex justify-center items-center"
           >
-            <div className="bg-[#16191F] w-full rounded-[15px] flex flex-col justify-center items-center pt-[20px] pb-[40px] px-[20px] space-y-[20px]">
-              {/* 지갑 */}
-              <div
-                className={
-                  `h-[24px] w-full flex` +
-                  " " +
-                  (isMobile ? "justify-center" : "justify-end")
-                }
-              >
-                <div className="flex justify-center items-center space-x-[7px] bg-gradient-to-r from-[#5DE7E7] via-[#5D9DF7] to-[#A05DF7] rounded-[100px] p-[1px]">
-                  <div className="flex px-[10px] w-full h-full bg-[#16191F] rounded-[100px] border border-transparent">
-                    <Image
-                      src="/icon_wallet.svg"
-                      alt="wallet"
-                      width={11.35}
-                      height={12}
-                    />
-                    <span className="text-[12px] text-white flex justify-center items-center font-[500px] font-normal ml-[7px]">
-                      {shortenAddress(account)}
+            <div
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
+              className="max-w-[600px] w-full min-w-[320px] z-50 bg-gradient-to-r from-[#5DE7E7] via-[#5D9DF7] to-[#A05DF7] rounded-[15px] shadow-none mx-[10px] p-[1px]"
+            >
+              <div className="bg-[#16191F] w-full rounded-[15px] flex flex-col justify-center items-center pt-[20px] pb-[40px] px-[20px] space-y-[20px]">
+                {/* 지갑 */}
+                <div
+                  className={
+                    `h-[24px] w-full flex` +
+                    " " +
+                    (isMobile ? "justify-center" : "justify-end")
+                  }
+                >
+                  <div className="flex justify-center items-center space-x-[7px] bg-gradient-to-r from-[#5DE7E7] via-[#5D9DF7] to-[#A05DF7] rounded-[100px] p-[1px]">
+                    <div className="flex px-[10px] w-full h-full bg-[#16191F] rounded-[100px] border border-transparent">
+                      <Image
+                        src="/icon_wallet.svg"
+                        alt="wallet"
+                        width={11.35}
+                        height={12}
+                      />
+                      <span className="text-[12px] text-white flex justify-center items-center font-[500px] font-normal ml-[7px]">
+                        {shortenAddress(account)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                {/* 환불안내 */}
+                <div className="flex flex-col items-center space-y-[10px] w-full">
+                  <span className="text-white text-[20px] font-[700]">
+                    stat NFT 환불 안내
+                  </span>
+                  <span className="px-[30px] w-full text-white text-[16px] font-[400] leading-[30px]">
+                    1. stat 환불은{" "}
+                    <span className="font-[700]">stat NFT 보유자</span>에 한해서
+                    환불됩니다. <br />
+                    2. 환불하기{" "}
+                    <span className="font-[700]">
+                      원하는 NFT를 선택
+                    </span>하고 <span className="font-[700]">확인 버튼</span>을
+                    누르면 환불됩니다. <br />
+                    3. 환불한 NFT는{" "}
+                    <span className="font-[700]">2024년 1월</span>
+                    부터 순차적으로 환불될 예정입니다.
+                  </span>
+                </div>
+                {/* 보유 stat NFT 목록 */}
+                <div className="w-full flex flex-col items-center px-[30px] space-y-[10px] h-[261px]">
+                  <span className="text-white text-[14px] font-[500] h-[22px]">
+                    보유 NFT 목록
+                  </span>
+                  <div className="flex flex-col w-full min-w-[280px] py-[10px] px-[20px] justify-start items-center rounded-[10px] bg-[#0A0A0A] h-full overflow-y-auto">
+                    <span className="text-white h-[40px] flex items-center text-[16px] font-[400] leading-[40px]">
+                      NFT 번호
+                    </span>
+                    <div className="w-full h-[0.5px] bg-white mt-[2px] mb-[10px]" />
+                    <div className="flex flex-col w-full -space-y-[10px] max-h-[100px]">
+                      {
+                        // NFT 번호
+                        tokens.map((token, index) => {
+                          return (
+                            <button
+                              key={index}
+                              className="flex justify-start items-center w-full min-h-[40px] text-white space-x-[10px]"
+                              onClick={() => handleClickToken(token)}
+                            >
+                              {
+                                // 선택된 NFT 번호
+                                checkedToken?.tokenId === token.tokenId ? (
+                                  <Image
+                                    src="/icon_checked.png"
+                                    alt="check"
+                                    width={18}
+                                    height={18}
+                                  />
+                                ) : (
+                                  <Image
+                                    src="/icon_notchecked.png"
+                                    alt="uncheck"
+                                    width={18}
+                                    height={18}
+                                  />
+                                )
+                              }
+                              <span className="text-[16px] font-[400] ">
+                                #{getFormattedTokenId(token.tokenId)}{" "}
+                              </span>
+                            </button>
+                          );
+                        })
+                      }
+                    </div>
+                  </div>
+                </div>
+                {/* 환불금액 안내 */}
+                <div className="flex flex-col w-full space-y-[5px]">
+                  {/* 선 */}
+                  <div className="w-full flex items-center justify-center p-[10px]">
+                    <div className="w-full h-[1px] bg-white" />
+                  </div>
+                  {/* 금액 */}
+                  <div
+                    className={
+                      "w-full flex px-[20px] space-x-[20px]" +
+                      " " +
+                      (isMobile ? "justify-center" : "justify-end")
+                    }
+                  >
+                    <div className="flex flex-col justify-center items-center px-[20px] bg-black rounded-[10px] text-[30px] font-[700] text-white">
+                      {checkedToken?.refundAmount || 0}
+                    </div>
+                    <span className="text-[20px] font-[500] text-white flex items-center">
+                      stat
                     </span>
                   </div>
                 </div>
-              </div>
-              {/* 환불안내 */}
-              <div className="flex flex-col items-center space-y-[10px] w-full">
-                <span className="text-white text-[20px] font-[700]">
-                  stat NFT 환불 안내
-                </span>
-                <span className="px-[30px] w-full text-white text-[16px] font-[400] leading-[30px]">
-                  1. stat 환불은{" "}
-                  <span className="font-[700]">stat NFT 보유자</span>에 한해서
-                  환불됩니다. <br />
-                  2. 환불하기{" "}
-                  <span className="font-[700]">원하는 NFT를 선택</span>하고{" "}
-                  <span className="font-[700]">확인 버튼</span>을 누르면
-                  환불됩니다. <br />
-                  3. 환불한 NFT는 <span className="font-[700]">2024년 1월</span>
-                  부터 순차적으로 환불될 예정입니다.
-                </span>
-              </div>
-              {/* 보유 stat NFT 목록 */}
-              <div className="w-full flex flex-col items-center px-[30px] space-y-[10px] h-[261px]">
-                <span className="text-white text-[14px] font-[500] h-[22px]">
-                  보유 NFT 목록
-                </span>
-                <div className="flex flex-col w-full min-w-[280px] py-[10px] px-[20px] justify-start items-center rounded-[10px] bg-[#0A0A0A] h-full">
-                  <span className="text-white h-[40px] flex items-center text-[16px] font-[400] leading-[40px]">
-                    NFT 번호
-                  </span>
-                  <div className="w-full h-[0.5px] bg-[#F6F8FF] mt-[2px] mb-[10px]" />
-                  {
-                    // NFT 번호
-                    [1, 2, 3, 4, 5].map((item, index) => (
-                      <div
-                        key={index}
-                        className="flex justify-between items-center w-full h-[40px] text-white text-[16px] font-[400] leading-[40px]"
-                      >
-                        <span>{item}</span>
-                        <button className="w-[20px] h-[20px] flex justify-center items-center">
-                          <Image
-                            src="/icon_check.svg"
-                            alt="check"
-                            width={20}
-                            height={20}
-                          />
-                        </button>
-                      </div>
-                    ))
-                  }
+                {/* 취소하기 / 환불하기 버튼 */}
+                <div className="flex justify-center py-[10px] space-x-[5px] items-center w-full">
+                  {/* 취소하기 */}
+                  <button className="min-w-[124px] flex justify-center items-center h-[60px] py-[18px] px-[26px] text-[20px] font-[700] text-[#808080]">
+                    취소하기
+                  </button>
+                  {/* 환불하기 */}
+                  <button className="flex items-center justify-center h-[62px] w-full rounded-[15px] bg-gradient-to-r from-[#47A9B1] via-[#4171A0] to-[#A25EF8] text-[20px] font-[700] text-[white]">
+                    환불하기
+                  </button>
                 </div>
+                {/* 로딩 */}
+                {isLoading && (
+                  <div
+                    className="absolute inset-0 w-full h-full flex justify-center items-center backdrop-blur-sm pointer-events-none"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <CircularProgress
+                      color="secondary"
+                      aria-label="Loading..."
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </div>
-        </div>
-      )}
-    </main>
+        )}
+        {/* 완료 모달 */}
+        {completModal && (
+          <div
+            onClick={() => setCompletModal(false)}
+            className="fixed top-0 left-0 w-full h-full z-50 bg-center bg-lightgray bg-cover bg-no-repeat bg-[url('/modal_background_img.png')] flex justify-center items-center"
+          >
+            <div
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
+              className="max-w-[600px] w-full min-w-[320px] h-[360px] min-h-[325px] z-50 bg-gradient-to-r from-[#5DE7E7] via-[#5D9DF7] to-[#A05DF7] border border-transparent rounded-[15px] shadow-none mx-[10px]"
+            >
+              <div className="bg-[#16191F] w-full h-full rounded-[15px] flex flex-col justify-center items-center py-[40px] px-[20px] space-y-[59px]">
+                <span className="text-white text-[20px] font-[500] leading-normal mx-[40px] text-center">
+                  환불이 완료되었습니다. <br /> 감사합니다.
+                </span>
+                <button
+                  onClick={() => setCompletModal(false)}
+                  className="flex min-w-[280px] max-w-[400px] w-full justify-center items-center rounded-[10px] bg-gradient-to-r from-[#47A9B1] via-[#4171A0] to-[#A25EF8] h-[50px] w-[270px] space-y-[30px]"
+                >
+                  <span className="text-white text-[20px] font-[500]">
+                    처음으로
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+    </NextUIProvider>
   );
 }
