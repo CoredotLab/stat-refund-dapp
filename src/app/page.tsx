@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { SetStateAction, useEffect, useState } from "react";
 import Caver, { AbiItem } from "caver-js";
 import { isMobile } from "react-device-detect";
 import axios from "axios";
@@ -35,6 +35,7 @@ enum ConnectWalletType {
 type StatNFT = {
   tokenId: number;
   refundAmount: number;
+  traderName: string;
 };
 
 const KLAYTN_ENNODE_MAINNET = "https://public-en-cypress.klaytn.net";
@@ -43,6 +44,8 @@ const MAINNET_STAT_NFT_CONTRACT_ADDRESS =
   "0x96e423d5cf07bbd8e13a1cee4fe390dcd4b3fb6b";
 const BAOBAB_STAT_NFT_CONTRACT_ADDRESS =
   "0xBd34Ea3FEe2c1F35F0950A8D5D957fF1e02cAC2E";
+const STAT_REFUND_ACCOUNT_ADDRESS =
+  "0x8b56758B52cC56A7a0aB4C9d7698C73737eDCcbA"; //TODO
 
 export default function Home() {
   const [connectWalletModal, setConnectWalletModal] = useState(false);
@@ -57,6 +60,7 @@ export default function Home() {
   const [checkedToken, setCheckedToken] = useState<StatNFT | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [completModal, setCompletModal] = useState(false);
+  const [inputAddress, setInputAddress] = useState("");
 
   const handleConnectKaikas = async () => {
     // 모바일에서는 안됨
@@ -277,87 +281,387 @@ export default function Home() {
   };
 
   useEffect(() => {
-    const doAsync = async () => {
-      try {
-        if (caver && account) {
-          const statContract = caver.contract.create(
-            StatNFTABI as AbiItem[],
-            BAOBAB_STAT_NFT_CONTRACT_ADDRESS
-          );
-          const tokenBalance = await statContract.methods
-            .balanceOf(account)
-            .call();
-          console.log("tokenBalance", tokenBalance);
-
-          const tokenIds = [];
-          for (let i = 0; i < tokenBalance; i++) {
-            const tokenId = await statContract.methods
-              .tokenOfOwnerByIndex(account, i)
-              .call();
-            tokenIds.push(tokenId);
-          }
-          console.log("tokenIds", tokenIds);
-          // tokenUri 가져오기
-          const tokenUris = [];
-          for (let i = 0; i < tokenIds.length; i++) {
-            const tokenUri = await statContract.methods
-              .tokenURI(tokenIds[i])
-              .call();
-            tokenUris.push(tokenUri);
-          }
-          console.log("tokenUris", tokenUris);
-          // token URI 에서 attributes[] 에서 trait_type이 "트레이더"의 value 가져오기
-          const traders = [];
-          for (let i = 0; i < tokenUris.length; i++) {
-            const tokenUri = tokenUris[i];
-            const response = await axios.get(tokenUri);
-            const { attributes } = response.data;
-            const trader = attributes.find(
-              (attribute: any) => attribute.trait_type === "트레이더"
-            );
-            traders.push(trader);
-          }
-
-          // 모멘텀 스켈퍼 = 10451 KLAY, 박리다메 = 6197 KLAY, 멘탈리스크 = 5616 KLAY, 흑구 = 5424 KLAY, 라이노 = 5318 KLAY
-          const refundAmounts = [];
-          for (let i = 0; i < traders.length; i++) {
-            const trader = traders[i];
-            if (trader.value === "모멘텀 스켈퍼") {
-              refundAmounts.push(10451);
-            } else if (trader.value === "박리다메") {
-              refundAmounts.push(6197);
-            } else if (trader.value === "멘탈리스크") {
-              refundAmounts.push(5616);
-            } else if (trader.value === "흑구") {
-              refundAmounts.push(5424);
-            } else if (trader.value === "라이노") {
-              refundAmounts.push(5318);
-            } else {
-              refundAmounts.push(100);
-            }
-          }
-
-          // tokenIds, refundAmounts 합치기
-          const tokens = [];
-          for (let i = 0; i < tokenIds.length; i++) {
-            const token = {
-              tokenId: tokenIds[i],
-              refundAmount: refundAmounts[i],
-            };
-            tokens.push(token);
-          }
-
-          setTokens(tokens);
-          console.log("traders", traders);
-        }
-      } catch (error) {
-        console.error(error);
-      }
-    };
     if (caver && account) {
-      doAsync();
+      updateToken();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [caver, account]);
+
+  const updateToken = async () => {
+    try {
+      if (caver && account) {
+        const statContract = caver.contract.create(
+          StatNFTABI as AbiItem[],
+          BAOBAB_STAT_NFT_CONTRACT_ADDRESS
+        );
+        const tokenBalance = await statContract.methods
+          .balanceOf(account)
+          .call();
+        console.log("tokenBalance", tokenBalance);
+
+        const tokenIds = [];
+        for (let i = 0; i < tokenBalance; i++) {
+          const tokenId = await statContract.methods
+            .tokenOfOwnerByIndex(account, i)
+            .call();
+          tokenIds.push(tokenId);
+        }
+        console.log("tokenIds", tokenIds);
+        // tokenUri 가져오기
+        const tokenUris = [];
+        for (let i = 0; i < tokenIds.length; i++) {
+          const tokenUri = await statContract.methods
+            .tokenURI(tokenIds[i])
+            .call();
+          tokenUris.push(tokenUri);
+        }
+        console.log("tokenUris", tokenUris);
+        // token URI 에서 attributes[] 에서 trait_type이 "트레이더"의 value 가져오기
+        const traders = [];
+        for (let i = 0; i < tokenUris.length; i++) {
+          const tokenUri = tokenUris[i];
+          const response = await axios.get(tokenUri);
+          const { attributes } = response.data;
+          const trader = attributes.find(
+            (attribute: any) => attribute.trait_type === "트레이더"
+          );
+          traders.push(trader);
+        }
+
+        // 모멘텀 스켈퍼 = 10451 KLAY, 박리다메 = 6197 KLAY, 멘탈리스크 = 5616 KLAY, 흑구 = 5424 KLAY, 라이노 = 5318 KLAY
+        const refundAmounts = [];
+        for (let i = 0; i < traders.length; i++) {
+          const trader = traders[i];
+          if (trader.value === "모멘텀 스켈퍼") {
+            refundAmounts.push(10451);
+          } else if (trader.value === "박리다메") {
+            refundAmounts.push(6197);
+          } else if (trader.value === "멘탈리스크") {
+            refundAmounts.push(5616);
+          } else if (trader.value === "흑구") {
+            refundAmounts.push(5424);
+          } else if (trader.value === "라이노") {
+            refundAmounts.push(5318);
+          }
+        }
+
+        // tokenIds, refundAmounts 합치기
+        const tokens = [];
+        for (let i = 0; i < tokenIds.length; i++) {
+          const token = {
+            tokenId: tokenIds[i],
+            refundAmount: refundAmounts[i],
+            traderName: traders[i].value,
+          };
+          tokens.push(token);
+        }
+
+        setTokens(tokens);
+        console.log("traders", traders);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleAddressChange = (event: {
+    target: { value: SetStateAction<string> };
+  }) => {
+    setInputAddress(event.target.value);
+  };
+
+  // 1) web3 utils.isAddress()로 이더리움 주소 형식인지 확인 +
+  // 2) 선택된 tokenId가 상태값으로 존재하는 지 확인
+  // 3) 토큰 아이디의 주소가 현재 지갑 주소의 주인이 맞는지 확인
+  // 4) transfer를 해줘야하는데, kaikas랑 klip이랑 다르게 처리
+  // 5) kaikas는 caver로 처리하면 됨.
+  // 6) klip은 card transfer docs 참고해서 처리
+  // 7) 가스비 미리 확인해서 가스비가 부족하면 안내
+  // 8) transfer 트랜잭션 중에는 loading 표시
+  // 9) 트랜잭션 완료되면, 완료 모달 띄우기
+  // 10) 완료 후에는 완료 모달만 닫고 statNFT 목록을 최신화 해야한다.
+  const handleRefundBtn = async () => {
+    if (!caver) {
+      alert("지갑 연결을 먼저 해주세요.");
+      return;
+    }
+
+    if (!checkedToken) {
+      alert("환불할 NFT를 선택해주세요.");
+      return;
+    }
+
+    if (!inputAddress) {
+      alert("이더리움 지갑 주소를 입력해주세요.");
+      return;
+    }
+
+    if (!caver.utils.isAddress(inputAddress)) {
+      alert("이더리움 지갑 주소가 올바르지 않습니다.");
+      return;
+    }
+
+    try {
+      const statContract = caver.contract.create(
+        StatNFTABI as AbiItem[],
+        BAOBAB_STAT_NFT_CONTRACT_ADDRESS
+      );
+      const gasPrice = await caver.klay.getGasPrice();
+      let gasLimit = 0;
+      await statContract.methods
+        .safeTransferFrom(
+          account,
+          STAT_REFUND_ACCOUNT_ADDRESS,
+          checkedToken.tokenId
+        )
+        .estimateGas({ from: account })
+        .then((res: any) => {
+          gasLimit = res as number;
+        })
+        .catch((err: any) => {
+          console.error(err);
+          throw new Error("가스비 계산 중 오류가 발생했습니다.");
+        });
+      const gasFee = caver.utils.convertFromPeb(
+        caver.utils.toPeb(gasPrice, "peb") * gasLimit * 1.05,
+        "KLAY"
+      );
+
+      // 가스비가 부족하면 안내
+      const balance = await caver.klay.getBalance(account);
+      const balanceKLAY = caver.utils.convertFromPeb(balance, "KLAY");
+      if (balanceKLAY < gasFee) {
+        alert("가스비가 부족합니다.");
+        return;
+      }
+
+      if (connectWalletType === ConnectWalletType.KAIKAS) {
+        console.log("gasPrice", gasPrice);
+        const overGasPrice = caver.utils.toPeb(gasPrice, "peb") * 1.05;
+        // transfer
+        await caver.klay
+          .sendTransaction({
+            type: "SMART_CONTRACT_EXECUTION",
+            from: account,
+            to: BAOBAB_STAT_NFT_CONTRACT_ADDRESS,
+            data: statContract.methods
+              .safeTransferFrom(
+                account,
+                STAT_REFUND_ACCOUNT_ADDRESS,
+                checkedToken.tokenId
+              )
+              .encodeABI(),
+            gas: gasLimit,
+            gasPrice: overGasPrice,
+          })
+          .on("transactionHash", (hash: any) => {
+            console.log("hash", hash);
+            setIsLoading(true);
+          })
+          .on("receipt", async (receipt: any) => {
+            console.log("receipt", receipt);
+            const requestResult = await requestPostEthAddress(
+              account,
+              inputAddress,
+              checkedToken.tokenId,
+              checkedToken.traderName
+            );
+            setIsLoading(false);
+            await updateToken();
+            if (!requestResult) {
+              return;
+            }
+            setCompletModal(true);
+          })
+          .on("error", (error: any) => {
+            console.error("error", error);
+            setIsLoading(false);
+            if (error.code === -32603) {
+              alert("트랜잭션을 취소하셨습니다.");
+              return;
+            } else {
+              alert("환불 중 오류가 발생했습니다.");
+            }
+          });
+      } else if (connectWalletType === ConnectWalletType.KLIP) {
+        // prepare -> request -> result
+        /*  prepare curl 예시, axios로 변환
+        curl -X POST "https://a2a-api.klipwallet.com/v2/a2a/prepare" \
+      -d '{"bapp": { "name" : "My BApp" }, "type": "send_card", "transaction": { "contract": "0xB21F0285d27beb2373ECB5c17E119ccEAd7Ee10A", "from": "0xcD1722f2947Def4CF144679da39c4C32bDc35681", "to": "0x85c17299e9462e035c149847776e4edb7f4b2aa9", "card_id": "1234" } }' \
+      -H "Content-Type: application/json"
+        */
+        const prepareUrl = "https://a2a-api.klipwallet.com/v2/a2a/prepare";
+
+        // prepare
+        const prepareBody = {
+          bapp: { name: bappName },
+          type: KlipActionType.SEND_CARD,
+          transaction: {
+            contract: BAOBAB_STAT_NFT_CONTRACT_ADDRESS,
+            from: account,
+            to: STAT_REFUND_ACCOUNT_ADDRESS,
+            card_id: checkedToken.tokenId,
+          },
+        };
+        const prepareResponse = await axios.post(prepareUrl, prepareBody, {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        console.log("prepareResponse", prepareResponse);
+        const { request_key } = prepareResponse.data;
+        if (!request_key) {
+          alert("클립 지갑 연결을 실패했습니다.");
+          throw new Error("클립 지갑 연결을 실패했습니다.");
+        }
+
+        const resultCheckInterval = setInterval(() => {
+          checkSendCardResult(request_key)
+            .then((res) => {
+              clearInterval(resultCheckInterval);
+            })
+            .catch((err) => {
+              console.error("인증 결과 확인 중 오류 발생:", err);
+            });
+        }, 3000);
+
+        // deep link
+        requestSendCardDeepLink(request_key);
+      }
+    } catch (error) {
+      console.error("transfer ERROR", error);
+    }
+  };
+
+  /**
+   * 결과 타입 예시
+   * {
+        "request_key": "0b0ee0ad-62b3-4146-980b-531b3201265d",
+        "expiration_time": 1600011054,
+        "status": "completed",
+        "result": {
+          "tx_hash": "0x82d018556e88b8f8f43dc2c725a683afc204bfd3c17230c41252354980f77fb3",
+          "status": "success"
+        }
+      }
+      status는 pending, success, fail 이 있는데, success가 아니면 pending이나 fail이므로 pending이면 다시 요청하고, fail이면 실패 메시지 띄우기
+   */
+  const checkSendCardResult = async (requestKey: string) => {
+    console.log("checkSendCardResult", requestKey);
+    if (!requestKey) {
+      console.log("requestKey is null");
+      return;
+    }
+    console.log("requestKey is not null");
+    try {
+      const response = await axios
+        .get(
+          `https://a2a-api.klipwallet.com/v2/a2a/result?request_key=${requestKey}`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        )
+        .then((res) => {
+          console.log("res", res);
+          if (res.status !== 200) {
+            alert("클립 지갑 연결을 실패했습니다.");
+            throw new Error("클립 지갑 연결을 실패했습니다.");
+          }
+
+          const result = res.data;
+          if (!result) {
+            alert("클립 지갑 연결을 실패했습니다.");
+            throw new Error("클립 지갑 연결을 실패했습니다.");
+          }
+
+          if (result.status === "completed") {
+            const status = result.result?.status;
+            if (status !== "success") {
+              alert("클립 지갑 연결을 실패했습니다.");
+              throw new Error("클립 지갑 연결을 실패했습니다.");
+            }
+            if (status === "success") {
+              // 성공
+              return true;
+            } else if (status === "fail") {
+              // 실패
+              alert("클립 지갑 연결을 실패했습니다.");
+              throw new Error("클립 지갑 연결을 실패했습니다.");
+            } else if (status === "pending") {
+              // 대기
+              console.log("대기 중");
+              return false;
+            }
+          } else {
+            console.debug("인증 대기 중 또는 실패:", result);
+            return;
+          }
+        })
+        .catch((err: any) => {
+          console.error(err);
+          return err;
+        });
+    } catch (error) {
+      console.error("인증 결과 확인 중 오류 발생:", error);
+      return error;
+    }
+  };
+
+  const requestSendCardDeepLink = (requestKey: string) => {
+    const deeplinkUrl = `kakaotalk://klipwallet/open?url=https://klipwallet.com/?target=/a2a?request_key=${requestKey}`;
+
+    window.location.href = deeplinkUrl;
+  };
+
+  // transfer 성공시 호출해야하는 함수
+  // stat api 호출
+  /**
+   * POST: https://stat-live-api.shop:8080/refundDetail
+  200 'success': True <- 성공
+  400 'success': False, 'message': {exception message}  <- 실패
+  body
+  kipWalletAddress : 연결한 kaikas 혹은 klip 지갑 주소
+  ercWalletAddress : 입력한 환불 받을 메타마스크 지갑 주소
+  nftId : 환불 신청 한 NFT ID
+  traderName: 환불 신청 한 트레이더 이름
+  JSON 포멧 예제
+  {
+      "kipWalletAddress":"0x000",
+      "ercWalletAddress":"0x111",
+      "nftId":"12",
+      "traderName":"모멘텀 스켈퍼"
+  }
+   */
+  const requestPostEthAddress = async (
+    klaytnAddress: string,
+    ercAddress: string,
+    tokenId: number,
+    traderName: string
+  ) => {
+    const url = "https://stat-live-api.shop:8080/refundDetail";
+    const body = {
+      kipWalletAddress: klaytnAddress,
+      ercWalletAddress: ercAddress,
+      nftId: tokenId,
+      traderName: traderName,
+    };
+    try {
+      const response = await axios.post(url, body);
+      console.log("response", response);
+      if (response.status === 200) {
+        return true;
+      } else {
+        alert("환불 신청에 실패했습니다. 스탯 공식 디스코드로 문의해주세요.");
+        return false;
+      }
+    } catch (error) {
+      console.error(error);
+      alert("환불 신청에 실패했습니다. 스탯 공식 디스코드로 문의해주세요.");
+      return false;
+    }
+  };
 
   return (
     <NextUIProvider>
@@ -420,7 +724,7 @@ export default function Home() {
                 </td>
                 <td className="w-1/2 flex justify-center items-center py-[10px]">
                   353만2438원{" "}
-                  <span className="ml-1 font-normal">상당의 KLAY</span>
+                  <span className="ml-1 font-normal">상당의 USDT</span>
                 </td>
               </tr>
               <tr className="flex border-b border-white">
@@ -432,7 +736,7 @@ export default function Home() {
                 </td>
                 <td className="w-1/2 flex justify-center items-center py-[10px]">
                   209만4586원{" "}
-                  <span className="ml-1 font-normal">상당의 KLAY</span>
+                  <span className="ml-1 font-normal">상당의 USDT</span>
                 </td>
               </tr>
               <tr className="flex border-b border-white">
@@ -444,7 +748,7 @@ export default function Home() {
                 </td>
                 <td className="w-1/2 flex justify-center items-center py-[10px]">
                   189만8208원{" "}
-                  <span className="ml-1 font-normal">상당의 KLAY</span>
+                  <span className="ml-1 font-normal">상당의 USDT</span>
                 </td>
               </tr>
               <tr className="flex border-b border-white">
@@ -456,7 +760,7 @@ export default function Home() {
                 </td>
                 <td className="w-1/2 flex justify-center items-center py-[10px]">
                   183만3312원{" "}
-                  <span className="ml-1 font-normal">상당의 KLAY</span>
+                  <span className="ml-1 font-normal">상당의 USDT</span>
                 </td>
               </tr>
               <tr className="flex border-b border-white">
@@ -468,7 +772,7 @@ export default function Home() {
                 </td>
                 <td className="w-1/2 flex justify-center items-center py-[10px]">
                   179만7484원{" "}
-                  <span className="ml-1 font-normal">상당의 KLAY</span>
+                  <span className="ml-1 font-normal">상당의 USDT</span>
                 </td>
               </tr>
             </tbody>
@@ -540,7 +844,7 @@ export default function Home() {
               }}
               className="max-w-[600px] w-full min-w-[320px] z-50 bg-gradient-to-r from-[#5DE7E7] via-[#5D9DF7] to-[#A05DF7] rounded-[15px] shadow-none mx-[10px] p-[1px]"
             >
-              <div className="bg-[#16191F] w-full rounded-[15px] flex flex-col justify-center items-center pt-[20px] pb-[40px] px-[20px] space-y-[20px]">
+              <div className="bg-[#16191F] w-full rounded-[15px] flex flex-col justify-center items-center p-[10px] space-y-[20px]">
                 {/* 지갑 */}
                 <div
                   className={
@@ -565,22 +869,41 @@ export default function Home() {
                 </div>
                 {/* 환불안내 */}
                 <div className="flex flex-col items-center space-y-[10px] w-full">
-                  <span className="text-white text-[20px] font-[700]">
-                    stat NFT 환불 안내
+                  <span className="px-[30px] w-full text-white text-[20px] font-[700]">
+                    • stat NFT 환불 안내
                   </span>
-                  <span className="px-[30px] w-full text-white text-[16px] font-[400] leading-[30px]">
-                    1. stat 환불은{" "}
-                    <span className="font-[700]">stat NFT 보유자</span>에 한해서
-                    환불됩니다. <br />
-                    2. 환불하기{" "}
-                    <span className="font-[700]">
-                      원하는 NFT를 선택
-                    </span>하고 <span className="font-[700]">확인 버튼</span>을
-                    누르면 환불됩니다. <br />
-                    3. 환불한 NFT는{" "}
-                    <span className="font-[700]">2024년 1월</span>
-                    부터 순차적으로 환불될 예정입니다.
+                  <span className="px-[30px] w-full text-white text-[14px] font-[300] leading-[25px]">
+                    1. 환불한 NFT는{" "}
+                    <span className="font-[500]">2024년 1월</span>부터
+                    순차적으로 환불될 예정입니다.
+                    <br />
+                    2. 환불을 위해{" "}
+                    <span className="font-[500]">이더리움 지갑 주소</span>를
+                    입력해주세요.{" "}
+                    <span className="font-[500]">
+                      주소 오입력에 대한 책임은 당사에서 지지 않습니다.
+                    </span>
                   </span>
+                </div>
+                {/* 이더리움 지갑 주소 입력창 */}
+                <div className="flex flex-col max-w-[580px] w-full px-[30px] pt-[14px] pb-[6px] items-center justify-center space-y-[10px]">
+                  <div className="w-full flex items-center space-x-[10px]">
+                    <span className="text-white text-[20px] font-[700]">
+                      • 이더리움 지갑 주소
+                    </span>
+                    <div className="flex w-[34px] h-[16px] justify-center items-center rounded-[5px] bg-[#FF5A5A] bg-opacity-[20%]">
+                      <span className="text-center text-[12px] font-[700] text-[#FF5A5A]">
+                        필수
+                      </span>
+                    </div>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="이더리움 지갑 주소를 입력해주세요."
+                    className="w-full h-[40px] rounded-[5px] bg-[#0A0A0A] text-white pl-[20px] text-[14px] font-[400]"
+                    value={inputAddress}
+                    onChange={handleAddressChange}
+                  />
                 </div>
                 {/* 보유 stat NFT 목록 */}
                 <div className="w-full flex flex-col items-center px-[30px] space-y-[10px] h-[261px]">
@@ -662,7 +985,10 @@ export default function Home() {
                     취소하기
                   </button>
                   {/* 환불하기 */}
-                  <button className="flex items-center justify-center h-[62px] w-full rounded-[15px] bg-gradient-to-r from-[#47A9B1] via-[#4171A0] to-[#A25EF8] text-[20px] font-[700] text-[white]">
+                  <button
+                    onClick={handleRefundBtn}
+                    className="flex items-center justify-center h-[62px] w-full rounded-[15px] bg-gradient-to-r from-[#47A9B1] via-[#4171A0] to-[#A25EF8] text-[20px] font-[700] text-[white]"
+                  >
                     환불하기
                   </button>
                 </div>
