@@ -18,8 +18,6 @@ declare global {
 
 // klip
 const bappName = "STAT NFT REFUND";
-const successLink = "https://stat-refund-dapp.vercel.app/";
-const failLink = "https://stat-refund-dapp.vercel.app/";
 
 enum KlipActionType {
   AUTH = "auth",
@@ -44,8 +42,10 @@ const MAINNET_STAT_NFT_CONTRACT_ADDRESS =
   "0x96e423d5cf07bbd8e13a1cee4fe390dcd4b3fb6b";
 const BAOBAB_STAT_NFT_CONTRACT_ADDRESS =
   "0xBd34Ea3FEe2c1F35F0950A8D5D957fF1e02cAC2E";
+// const STAT_REFUND_ACCOUNT_ADDRESS =
+//   "0xBd2A5960d60241E5b7d888c986F8fe4dbFf986b1"; //TODO klip
 const STAT_REFUND_ACCOUNT_ADDRESS =
-  "0x8b56758B52cC56A7a0aB4C9d7698C73737eDCcbA"; //TODO
+  "0x8b56758B52cC56A7a0aB4C9d7698C73737eDCcbA"; //TODO kaikas
 
 export default function Home() {
   const [connectWalletModal, setConnectWalletModal] = useState(false);
@@ -112,7 +112,6 @@ export default function Home() {
           setConnectWalletType(ConnectWalletType.KAIKAS);
           setRefundModal(true);
         } catch (error: any) {
-          console.error("여기", error);
           const { code } = error;
           if (code === -32603) {
             alert("지갑 연결을 취소하셨습니다.");
@@ -141,19 +140,13 @@ export default function Home() {
       return;
     }
 
-    const prepareUrl = "https://a2a-api.klipwallet.com/v2/a2a/prepare";
-
     try {
       let requestKeyTmp = "";
       const response = await axios
         .post(
           "https://a2a-api.klipwallet.com/v2/a2a/prepare",
           {
-            bapp: { name: "My BApp" },
-            callback: {
-              success: "mybapp://klipwallet/success",
-              fail: "mybapp://klipwallet/fail",
-            },
+            bapp: { name: "STAT NFT REFUND" },
             type: "auth",
           },
           {
@@ -165,31 +158,26 @@ export default function Home() {
         .then((res) => {
           const { request_key } = res.data;
           if (!request_key) {
-            alert("클립 지갑 연결을 실패했습니다.1");
             throw new Error("클립 지갑 연결을 실패했습니다.");
           }
           setKlipRequestKey(request_key);
           requestKeyTmp = request_key;
         })
         .catch((err: any) => {
-          console.error(err);
+          throw new Error("클립 지갑 연결을 실패했습니다.");
         });
-
-      // eoa 요청
-      const resultCheckInterval = setInterval(() => {
-        checkKlipAuthResult(requestKeyTmp)
-          .then((res) => {
-            clearInterval(resultCheckInterval);
-          })
-          .catch((err) => {
-            console.error("인증 결과 확인 중 오류 발생:", err);
-          });
-      }, 3000);
 
       // deep link
       requestKlipDeeplink(requestKeyTmp);
+
+      // eoa 요청
+      const resultCheckInterval = setInterval(() => {
+        checkKlipAuthResult(requestKeyTmp).then((res) => {
+          if (res) clearInterval(resultCheckInterval);
+        });
+      }, 3000);
     } catch (error) {
-      console.error(error);
+      alert("클립 지갑 연결을 실패했습니다.");
     }
   };
 
@@ -200,12 +188,10 @@ export default function Home() {
   };
 
   const checkKlipAuthResult = async (requestKey: string) => {
-    console.log("checkKlipAuthResult", requestKey);
     if (!requestKey) {
-      console.log("requestKey is null");
-      return;
+      return false;
     }
-    console.log("requestKey is not null");
+
     try {
       const response = await axios
         .get(
@@ -217,44 +203,39 @@ export default function Home() {
           }
         )
         .then((res) => {
-          console.log("res", res);
           if (res.status !== 200) {
-            alert("클립 지갑 연결을 실패했습니다.");
-            throw new Error("클립 지갑 연결을 실패했습니다.");
+            return false;
           }
 
           const result = res.data;
           if (!result) {
-            alert("클립 지갑 연결을 실패했습니다.");
-            throw new Error("클립 지갑 연결을 실패했습니다.");
+            return false;
           }
 
           if (result.status === "completed") {
             const eoa = result.result?.klaytn_address;
             if (!eoa) {
-              alert("클립 지갑 연결을 실패했습니다.3");
-              throw new Error("클립 지갑 연결을 실패했습니다.");
+              return false;
             }
-            alert(`클립 지갑 연결에 성공했습니다. 지갑주소: ${eoa}`);
+
             setAccount(eoa);
             setConnectWalletModal(false);
             setConnectWalletType(ConnectWalletType.KLIP);
             const caver = new Caver(KLAYTN_ENNODE_MAINNET);
             setCaver(caver);
             setRefundModal(true);
-            return result;
+            return true;
           } else {
-            console.debug("인증 대기 중 또는 실패:", result);
-            return;
+            return false;
           }
         })
         .catch((err: any) => {
-          console.error(err);
-          return err;
+          return false;
         });
+
+      return response;
     } catch (error) {
-      console.error("인증 결과 확인 중 오류 발생:", error);
-      return error;
+      return false;
     }
   };
 
@@ -267,7 +248,6 @@ export default function Home() {
   };
 
   const handleClickToken = (token: StatNFT) => {
-    console.log("handleClickToken", token);
     // 클릭한 token이 이미 선택된 token이면 선택 해제
     if (checkedToken?.tokenId === token.tokenId) {
       setCheckedToken(null);
@@ -297,7 +277,6 @@ export default function Home() {
         const tokenBalance = await statContract.methods
           .balanceOf(account)
           .call();
-        console.log("tokenBalance", tokenBalance);
 
         const tokenIds = [];
         for (let i = 0; i < tokenBalance; i++) {
@@ -306,7 +285,7 @@ export default function Home() {
             .call();
           tokenIds.push(tokenId);
         }
-        console.log("tokenIds", tokenIds);
+
         // tokenUri 가져오기
         const tokenUris = [];
         for (let i = 0; i < tokenIds.length; i++) {
@@ -315,7 +294,7 @@ export default function Home() {
             .call();
           tokenUris.push(tokenUri);
         }
-        console.log("tokenUris", tokenUris);
+
         // token URI 에서 attributes[] 에서 trait_type이 "트레이더"의 value 가져오기
         const traders = [];
         for (let i = 0; i < tokenUris.length; i++) {
@@ -357,10 +336,9 @@ export default function Home() {
         }
 
         setTokens(tokens);
-        console.log("traders", traders);
       }
     } catch (error) {
-      console.error(error);
+      alert("NFT 정보를 가져오는 중 오류가 발생했습니다.");
     }
   };
 
@@ -419,7 +397,6 @@ export default function Home() {
           gasLimit = res as number;
         })
         .catch((err: any) => {
-          console.error(err);
           throw new Error("가스비 계산 중 오류가 발생했습니다.");
         });
       const gasFee = caver.utils.convertFromPeb(
@@ -436,14 +413,13 @@ export default function Home() {
       }
 
       if (connectWalletType === ConnectWalletType.KAIKAS) {
-        console.log("gasPrice", gasPrice);
         const overGasPrice = caver.utils.toPeb(gasPrice, "peb") * 1.05;
         // transfer
         await caver.klay
           .sendTransaction({
             type: "SMART_CONTRACT_EXECUTION",
             from: account,
-            to: BAOBAB_STAT_NFT_CONTRACT_ADDRESS,
+            to: MAINNET_STAT_NFT_CONTRACT_ADDRESS,
             data: statContract.methods
               .safeTransferFrom(
                 account,
@@ -455,11 +431,9 @@ export default function Home() {
             gasPrice: overGasPrice,
           })
           .on("transactionHash", (hash: any) => {
-            console.log("hash", hash);
             setIsLoading(true);
           })
           .on("receipt", async (receipt: any) => {
-            console.log("receipt", receipt);
             const requestResult = await requestPostEthAddress(
               account,
               inputAddress,
@@ -474,7 +448,6 @@ export default function Home() {
             setCompletModal(true);
           })
           .on("error", (error: any) => {
-            console.error("error", error);
             setIsLoading(false);
             if (error.code === -32603) {
               alert("트랜잭션을 취소하셨습니다.");
@@ -495,41 +468,52 @@ export default function Home() {
         // prepare
         const prepareBody = {
           bapp: { name: bappName },
-          type: KlipActionType.SEND_CARD,
+          type: KlipActionType.SEND_CARD.valueOf(),
           transaction: {
-            contract: BAOBAB_STAT_NFT_CONTRACT_ADDRESS,
+            contract: MAINNET_STAT_NFT_CONTRACT_ADDRESS,
             from: account,
             to: STAT_REFUND_ACCOUNT_ADDRESS,
             card_id: checkedToken.tokenId,
           },
         };
+        // const prepareBody = {
+        //   bapp: { name: "klip test" },
+        //   type: "send_card",
+        //   transaction: {
+        //     contract: "0xa84cb2207cb80f8af82c44f7f41f804323f86289",
+        //     from: "0xbd2a5960d60241e5b7d888c986f8fe4dbff986b1",
+        //     to: "0x8b56758B52cC56A7a0aB4C9d7698C73737eDCcbA",
+        //     card_id: "118717",
+        //   },
+        // };
         const prepareResponse = await axios.post(prepareUrl, prepareBody, {
           headers: {
             "Content-Type": "application/json",
           },
         });
-        console.log("prepareResponse", prepareResponse);
+
         const { request_key } = prepareResponse.data;
         if (!request_key) {
           alert("클립 지갑 연결을 실패했습니다.");
           throw new Error("클립 지갑 연결을 실패했습니다.");
         }
 
-        const resultCheckInterval = setInterval(() => {
-          checkSendCardResult(request_key)
-            .then((res) => {
-              clearInterval(resultCheckInterval);
-            })
-            .catch((err) => {
-              console.error("인증 결과 확인 중 오류 발생:", err);
-            });
-        }, 3000);
-
         // deep link
         requestSendCardDeepLink(request_key);
+        setIsLoading(true);
+
+        const resultCheckInterval = setInterval(() => {
+          checkSendCardResult(request_key).then((res) => {
+            if (res) {
+              setIsLoading(false);
+              clearInterval(resultCheckInterval);
+            }
+          });
+        }, 3000);
       }
     } catch (error) {
-      console.error("transfer ERROR", error);
+      setIsLoading(false);
+      alert("환불 중 오류가 발생했습니다. 다시 시도해주세요.");
     }
   };
 
@@ -547,12 +531,10 @@ export default function Home() {
       status는 pending, success, fail 이 있는데, success가 아니면 pending이나 fail이므로 pending이면 다시 요청하고, fail이면 실패 메시지 띄우기
    */
   const checkSendCardResult = async (requestKey: string) => {
-    console.log("checkSendCardResult", requestKey);
     if (!requestKey) {
-      console.log("requestKey is null");
-      return;
+      return false;
     }
-    console.log("requestKey is not null");
+
     try {
       const response = await axios
         .get(
@@ -563,49 +545,45 @@ export default function Home() {
             },
           }
         )
-        .then((res) => {
-          console.log("res", res);
+        .then(async (res) => {
           if (res.status !== 200) {
-            alert("클립 지갑 연결을 실패했습니다.");
-            throw new Error("클립 지갑 연결을 실패했습니다.");
+            return false;
           }
 
           const result = res.data;
           if (!result) {
-            alert("클립 지갑 연결을 실패했습니다.");
-            throw new Error("클립 지갑 연결을 실패했습니다.");
+            return false;
           }
 
           if (result.status === "completed") {
             const status = result.result?.status;
             if (status !== "success") {
-              alert("클립 지갑 연결을 실패했습니다.");
-              throw new Error("클립 지갑 연결을 실패했습니다.");
+              return false;
             }
             if (status === "success") {
+              await updateToken();
+              setCompletModal(true);
               // 성공
               return true;
             } else if (status === "fail") {
               // 실패
-              alert("클립 지갑 연결을 실패했습니다.");
-              throw new Error("클립 지갑 연결을 실패했습니다.");
+
+              return false;
             } else if (status === "pending") {
               // 대기
-              console.log("대기 중");
+
               return false;
             }
           } else {
-            console.debug("인증 대기 중 또는 실패:", result);
-            return;
+            return false;
           }
         })
         .catch((err: any) => {
-          console.error(err);
-          return err;
+          return false;
         });
+      return response;
     } catch (error) {
-      console.error("인증 결과 확인 중 오류 발생:", error);
-      return error;
+      return false;
     }
   };
 
@@ -649,7 +627,7 @@ export default function Home() {
     };
     try {
       const response = await axios.post(url, body);
-      console.log("response", response);
+
       if (response.status === 200) {
         return true;
       } else {
@@ -657,7 +635,6 @@ export default function Home() {
         return false;
       }
     } catch (error) {
-      console.error(error);
       alert("환불 신청에 실패했습니다. 스탯 공식 디스코드로 문의해주세요.");
       return false;
     }
@@ -836,7 +813,11 @@ export default function Home() {
         {refundModal && (
           <div
             onClick={() => setRefundModal(false)}
-            className="fixed top-0 left-0 w-full h-full z-50 bg-center bg-lightgray bg-cover bg-no-repeat bg-[url('/modal_background_img.png')] flex justify-center items-center"
+            className={
+              "fixed top-0 left-0 w-full h-full z-50 bg-center bg-lightgray bg-cover bg-no-repeat bg-[url('/modal_background_img.png')] flex justify-center overflow-y-auto" +
+              " " +
+              (isMobile ? "items-start my-[10px]" : "items-center")
+            }
           >
             <div
               onClick={(e) => {
@@ -844,7 +825,13 @@ export default function Home() {
               }}
               className="max-w-[600px] w-full min-w-[320px] z-50 bg-gradient-to-r from-[#5DE7E7] via-[#5D9DF7] to-[#A05DF7] rounded-[15px] shadow-none mx-[10px] p-[1px]"
             >
-              <div className="bg-[#16191F] w-full rounded-[15px] flex flex-col justify-center items-center p-[10px] space-y-[20px]">
+              <div
+                className={
+                  "bg-[#16191F] w-full rounded-[15px] flex flex-col justify-center items-center p-[10px] space-y-[20px]" +
+                  " " +
+                  (isMobile && "space-y-[10px]")
+                }
+              >
                 {/* 지갑 */}
                 <div
                   className={
@@ -853,6 +840,7 @@ export default function Home() {
                     (isMobile ? "justify-center" : "justify-end")
                   }
                 >
+                  {/* 지갑주소 */}
                   <div className="flex justify-center items-center space-x-[7px] bg-gradient-to-r from-[#5DE7E7] via-[#5D9DF7] to-[#A05DF7] rounded-[100px] p-[1px]">
                     <div className="flex px-[10px] w-full h-full bg-[#16191F] rounded-[100px] border border-transparent">
                       <Image
@@ -900,19 +888,16 @@ export default function Home() {
                   <input
                     type="text"
                     placeholder="이더리움 지갑 주소를 입력해주세요."
-                    className="w-full h-[40px] rounded-[5px] bg-[#0A0A0A] text-white pl-[20px] text-[14px] font-[400]"
+                    className="w-full min-w-[280px] h-[40px] rounded-[5px] bg-[#0A0A0A] text-white pl-[20px] text-[14px] font-[400] border border-white border-[0.5px]"
                     value={inputAddress}
                     onChange={handleAddressChange}
                   />
                 </div>
                 {/* 보유 stat NFT 목록 */}
                 <div className="w-full flex flex-col items-center px-[30px] space-y-[10px] h-[261px]">
-                  <span className="text-white text-[14px] font-[500] h-[22px]">
-                    보유 NFT 목록
-                  </span>
                   <div className="flex flex-col w-full min-w-[280px] py-[10px] px-[20px] justify-start items-center rounded-[10px] bg-[#0A0A0A] h-full overflow-y-auto">
                     <span className="text-white h-[40px] flex items-center text-[16px] font-[400] leading-[40px]">
-                      NFT 번호
+                      보유 stat NFT 번호
                     </span>
                     <div className="w-full h-[0.5px] bg-white mt-[2px] mb-[10px]" />
                     <div className="flex flex-col w-full -space-y-[10px] max-h-[100px]">
@@ -960,13 +945,7 @@ export default function Home() {
                     <div className="w-full h-[1px] bg-white" />
                   </div>
                   {/* 금액 */}
-                  <div
-                    className={
-                      "w-full flex px-[20px] space-x-[20px]" +
-                      " " +
-                      (isMobile ? "justify-center" : "justify-end")
-                    }
-                  >
+                  <div className="w-full flex px-[20px] space-x-[20px] justify-end">
                     <div className="flex flex-col justify-center items-center px-[20px] bg-black rounded-[10px] text-[30px] font-[700] text-white">
                       {checkedToken?.refundAmount || 0}
                     </div>
@@ -976,7 +955,13 @@ export default function Home() {
                   </div>
                 </div>
                 {/* 취소하기 / 환불하기 버튼 */}
-                <div className="flex justify-center py-[10px] space-x-[5px] items-center w-full">
+                <div
+                  className={
+                    "flex justify-center space-x-[5px] items-center w-full" +
+                    " " +
+                    (isMobile ? "py-[0px]" : "py-[10px]")
+                  }
+                >
                   {/* 취소하기 */}
                   <button
                     onClick={() => setRefundModal(false)}
@@ -987,7 +972,11 @@ export default function Home() {
                   {/* 환불하기 */}
                   <button
                     onClick={handleRefundBtn}
-                    className="flex items-center justify-center h-[62px] w-full rounded-[15px] bg-gradient-to-r from-[#47A9B1] via-[#4171A0] to-[#A25EF8] text-[20px] font-[700] text-[white]"
+                    className={
+                      "flex items-center justify-center w-full rounded-[15px] bg-gradient-to-r from-[#47A9B1] via-[#4171A0] to-[#A25EF8] text-[20px] font-[700] text-[white]" +
+                      " " +
+                      (isMobile ? "h-[50px]" : "h-[62px]")
+                    }
                   >
                     환불하기
                   </button>
