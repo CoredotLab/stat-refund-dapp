@@ -32,20 +32,22 @@ enum ConnectWalletType {
 
 type StatNFT = {
   tokenId: number;
-  refundAmount: number;
+  refundAmount: string;
   traderName: string;
 };
 
 const KLAYTN_ENNODE_MAINNET = "https://public-en-cypress.klaytn.net";
 const KLAYTN_ENNODE_BAOBAB = "https://public-en-baobab.klaytn.net";
 const MAINNET_STAT_NFT_CONTRACT_ADDRESS =
-  "0x96e423d5cf07bbd8e13a1cee4fe390dcd4b3fb6b";
-const BAOBAB_STAT_NFT_CONTRACT_ADDRESS =
-  "0xBd34Ea3FEe2c1F35F0950A8D5D957fF1e02cAC2E";
+  "0x96e423d5cf07bbd8e13a1cee4fe390dcd4b3fb6b"; // real
+// const MAINNET_STAT_NFT_CONTRACT_ADDRESS =
+//   "0xa84cb2207cb80f8af82c44f7f41f804323f86289"; // test
 // const STAT_REFUND_ACCOUNT_ADDRESS =
-//   "0xBd2A5960d60241E5b7d888c986F8fe4dbFf986b1"; //TODO klip
+//   "0xBd2A5960d60241E5b7d888c986F8fe4dbFf986b1"; //TODO test: klip
+// const STAT_REFUND_ACCOUNT_ADDRESS =
+//   "0x8b56758B52cC56A7a0aB4C9d7698C73737eDCcbA"; //TODO test: kaikas
 const STAT_REFUND_ACCOUNT_ADDRESS =
-  "0x8b56758B52cC56A7a0aB4C9d7698C73737eDCcbA"; //TODO kaikas
+  "0x138fbb060fa77887b8dd1888407ca7b1ce24dc83"; //TODO real address
 
 export default function Home() {
   const [connectWalletModal, setConnectWalletModal] = useState(false);
@@ -57,6 +59,7 @@ export default function Home() {
   );
   const [refundModal, setRefundModal] = useState(false);
   const [tokens, setTokens] = useState<StatNFT[]>([]);
+
   const [checkedToken, setCheckedToken] = useState<StatNFT | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [completModal, setCompletModal] = useState(false);
@@ -81,24 +84,24 @@ export default function Home() {
           const accounts = await kaikas.enable();
           const account = accounts[0];
           // TODO: networkVersion: 8217. 아닐 경우 네트워크 변경
-          // if (kaikas.networkVersion !== "8217") {
-          //   await kaikas
-          //     .request({
-          //       method: "wallet_switchEthereumChain",
-          //       params: [{ chainId: "0x2019" }],
-          //     })
-          //     .then((res: any) => {
-          //       console.log("res", res);
-          //     })
-          //     .catch((err: any) => {
-          //       console.error("err", err);
-          //       const { code } = err;
-          //       if (code === 4001) {
-          //         alert("메인넷에서만 환불이 가능합니다.");
-          //         throw new Error("메인넷에서만 환불이 가능합니다.");
-          //       }
-          //     });
-          // }
+          if (kaikas.networkVersion !== "8217") {
+            await kaikas
+              .request({
+                method: "wallet_switchEthereumChain",
+                params: [{ chainId: "0x2019" }],
+              })
+              .then((res: any) => {
+                console.log("res", res);
+              })
+              .catch((err: any) => {
+                console.error("err", err);
+                const { code } = err;
+                if (code === 4001) {
+                  alert("메인넷에서만 환불이 가능합니다.");
+                  throw new Error("메인넷에서만 환불이 가능합니다.");
+                }
+              });
+          }
           setAccount(account);
 
           kaikas.on("accountsChanged", (accounts: any) => {
@@ -272,11 +275,12 @@ export default function Home() {
       if (caver && account) {
         const statContract = caver.contract.create(
           StatNFTABI as AbiItem[],
-          BAOBAB_STAT_NFT_CONTRACT_ADDRESS
+          MAINNET_STAT_NFT_CONTRACT_ADDRESS
         );
         const tokenBalance = await statContract.methods
           .balanceOf(account)
           .call();
+        console.log("tokenBalance", tokenBalance);
 
         const tokenIds = [];
         for (let i = 0; i < tokenBalance; i++) {
@@ -299,7 +303,10 @@ export default function Home() {
         const traders = [];
         for (let i = 0; i < tokenUris.length; i++) {
           const tokenUri = tokenUris[i];
-          const response = await axios.get(tokenUri);
+          // const response = await axios.get(tokenUri); // TODO real
+          const response = await axios.get(
+            "https://metadata-store.klaytnapi.com/c3bca402-e5c0-38c3-48bd-cfdcf99ea681/fe407214-0604-f3cc-707e-a597de185401.json"
+          ); // TODO test
           const { attributes } = response.data;
           const trader = attributes.find(
             (attribute: any) => attribute.trait_type === "트레이더"
@@ -312,15 +319,17 @@ export default function Home() {
         for (let i = 0; i < traders.length; i++) {
           const trader = traders[i];
           if (trader.value === "모멘텀 스켈퍼") {
-            refundAmounts.push(10451);
+            refundAmounts.push("353만 2438원");
           } else if (trader.value === "박리다메") {
-            refundAmounts.push(6197);
+            refundAmounts.push("209만 4586원");
           } else if (trader.value === "멘탈리스크") {
-            refundAmounts.push(5616);
+            refundAmounts.push("189만 8208원");
           } else if (trader.value === "흑구") {
-            refundAmounts.push(5424);
+            refundAmounts.push("183만 3312원");
           } else if (trader.value === "라이노") {
-            refundAmounts.push(5318);
+            refundAmounts.push("179만 7484원");
+          } else {
+            refundAmounts.push("0원");
           }
         }
 
@@ -382,7 +391,7 @@ export default function Home() {
     try {
       const statContract = caver.contract.create(
         StatNFTABI as AbiItem[],
-        BAOBAB_STAT_NFT_CONTRACT_ADDRESS
+        MAINNET_STAT_NFT_CONTRACT_ADDRESS
       );
       const gasPrice = await caver.klay.getGasPrice();
       let gasLimit = 0;
@@ -642,8 +651,8 @@ export default function Home() {
 
   return (
     <NextUIProvider>
-      <main className="flex flex-col min-w-[360px] w-full font-pretendard min-h-[1047px] py-[50px] px-[30px] gap-[10px] justify-center items-center bg-[#121212]">
-        <div className="min-w-[360px] w-full max-w-[1000px] min-h-[368px] max-h-[920px]">
+      <main className="flex flex-col min-w-screen w-full font-pretendard min-h-[1047px] py-[50px] px-[30px] gap-[10px] justify-center items-center bg-[#121212]">
+        <div className="min-w-[349px] w-full max-w-[1000px] min-h-[368px] max-h-[920px]">
           <Image
             src="/main_image2.png"
             alt="main"
@@ -814,22 +823,22 @@ export default function Home() {
           <div
             onClick={() => setRefundModal(false)}
             className={
-              "fixed top-0 left-0 w-full h-full z-50 bg-center bg-lightgray bg-cover bg-no-repeat bg-[url('/modal_background_img.png')] flex justify-center overflow-y-auto" +
+              "fixed top-0 left-0 w-full h-full z-50 bg-center bg-lightgray bg-cover bg-no-repeat bg-[url('/modal_background_img.png')] flex justify-center" +
               " " +
-              (isMobile ? "items-start my-[10px]" : "items-center")
+              (isMobile ? "items-start my-[1px]" : "items-center")
             }
           >
             <div
               onClick={(e) => {
                 e.stopPropagation();
               }}
-              className="max-w-[600px] w-full min-w-[320px] z-50 bg-gradient-to-r from-[#5DE7E7] via-[#5D9DF7] to-[#A05DF7] rounded-[15px] shadow-none mx-[10px] p-[1px]"
+              className="max-w-[600px] w-full min-w-[320px] z-50 bg-gradient-to-r from-[#5DE7E7] via-[#5D9DF7] to-[#A05DF7] rounded-[15px] shadow-none p-[1px]"
             >
               <div
                 className={
-                  "bg-[#16191F] w-full rounded-[15px] flex flex-col justify-center items-center p-[10px] space-y-[20px]" +
+                  "bg-[#16191F] w-full rounded-[15px] flex flex-col justify-center items-center p-[10px]" +
                   " " +
-                  (isMobile && "space-y-[10px]")
+                  (isMobile ? "space-y-[10px]" : "space-y-[20px]")
                 }
               >
                 {/* 지갑 */}
@@ -858,7 +867,7 @@ export default function Home() {
                 {/* 환불안내 */}
                 <div className="flex flex-col items-center space-y-[10px] w-full">
                   <span className="px-[30px] w-full text-white text-[20px] font-[700]">
-                    • stat NFT 환불 안내
+                    • STAT NFT 환불 안내
                   </span>
                   <span className="px-[30px] w-full text-white text-[14px] font-[300] leading-[25px]">
                     1. 환불한 NFT는{" "}
@@ -874,7 +883,7 @@ export default function Home() {
                   </span>
                 </div>
                 {/* 이더리움 지갑 주소 입력창 */}
-                <div className="flex flex-col max-w-[580px] w-full px-[30px] pt-[14px] pb-[6px] items-center justify-center space-y-[10px]">
+                <div className="flex flex-col max-w-[580px] w-full px-[30px] pt-[4px] pb-[4px] items-center justify-center space-y-[8px]">
                   <div className="w-full flex items-center space-x-[10px]">
                     <span className="text-white text-[20px] font-[700]">
                       • 이더리움 지갑 주소
@@ -894,12 +903,24 @@ export default function Home() {
                   />
                 </div>
                 {/* 보유 stat NFT 목록 */}
-                <div className="w-full flex flex-col items-center px-[30px] space-y-[10px] h-[261px]">
+                <div
+                  className={
+                    "w-full flex flex-col items-center px-[30px] space-y-[10px]" +
+                    " " +
+                    (isMobile ? "h-[160px]" : "h-[231px]")
+                  }
+                >
                   <div className="flex flex-col w-full min-w-[280px] py-[10px] px-[20px] justify-start items-center rounded-[10px] bg-[#0A0A0A] h-full overflow-y-auto">
-                    <span className="text-white h-[40px] flex items-center text-[16px] font-[400] leading-[40px]">
-                      보유 stat NFT 번호
+                    <span
+                      className={
+                        "text-white flex items-center text-[16px] font-[400] leading-[40px]" +
+                        " " +
+                        (isMobile ? "h-[30px]" : "h-[40px]")
+                      }
+                    >
+                      보유 STAT NFT 번호
                     </span>
-                    <div className="w-full h-[0.5px] bg-white mt-[2px] mb-[10px]" />
+                    <div className="w-full min-h-[0.5px] bg-white mt-[2px] mb-[10px]" />
                     <div className="flex flex-col w-full -space-y-[10px] max-h-[100px]">
                       {
                         // NFT 번호
@@ -946,11 +967,23 @@ export default function Home() {
                   </div>
                   {/* 금액 */}
                   <div className="w-full flex px-[20px] space-x-[20px] justify-end">
-                    <div className="flex flex-col justify-center items-center px-[20px] bg-black rounded-[10px] text-[30px] font-[700] text-white">
+                    <div
+                      className={
+                        "flex flex-col justify-center items-center px-[20px] bg-black rounded-[10px] font-[700] text-white" +
+                        " " +
+                        (isMobile ? "text-[20px]" : "text-[30px]")
+                      }
+                    >
                       {checkedToken?.refundAmount || 0}
                     </div>
-                    <span className="text-[20px] font-[500] text-white flex items-center">
-                      stat
+                    <span
+                      className={
+                        "font-[500] text-white flex items-center" +
+                        " " +
+                        (isMobile ? "text-[16px]" : "text-[20px]")
+                      }
+                    >
+                      상당의 USDT
                     </span>
                   </div>
                 </div>
