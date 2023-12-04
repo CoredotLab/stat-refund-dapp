@@ -570,6 +570,20 @@ export default function Home() {
               return false;
             }
             if (status === "success") {
+              if (!checkedToken) {
+                throw new Error(
+                  "환불 신청에 실패했습니다. 스탯 공식 디스코드로 문의해주세요."
+                );
+              }
+              const requestResult = await requestPostEthAddress(
+                account,
+                inputAddress,
+                checkedToken?.tokenId,
+                checkedToken?.traderName
+              );
+              if (!requestResult) {
+                return false;
+              }
               await updateToken();
               setCompletModal(true);
               // 성공
