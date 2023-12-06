@@ -58,6 +58,7 @@ export default function Home() {
   const [account, setAccount] = useState("");
   const [caver, setCaver] = useState<Caver>();
   const [klipRequestKey, setKlipRequestKey] = useState("");
+  const [kaikasRequestKey, setKaikasRequestKey] = useState(""); // only mobile
   const [connectWalletType, setConnectWalletType] = useState<ConnectWalletType>(
     ConnectWalletType.NONE
   );
@@ -69,7 +70,7 @@ export default function Home() {
   const [completModal, setCompletModal] = useState(false);
   const [inputAddress, setInputAddress] = useState("");
 
-  const [isDate, setIsDate] = useState(false);
+  const [isDate, setIsDate] = useState(false); // TODO: false
 
   useEffect(() => {
     const now = dayjs().unix();
@@ -78,13 +79,16 @@ export default function Home() {
     }
   }, []);
 
-  const handleConnectKaikas = async () => {
-    // 모바일에서는 안됨
+  const handleConnectKaikasBtn = () => {
     if (isMobile) {
-      alert("카이카스는 모바일에서 지원하지 않습니다.");
-      return;
+      handleConnectKaikasMobile();
+    } else {
+      handleConnectKaikas();
     }
+  };
 
+  // kaikas는 웹, 모바일에서 사용 가능
+  const handleConnectKaikas = async () => {
     // kaikas 있는지 확인
     if (window.klaytn) {
       const kaikas = window.klaytn;
@@ -142,6 +146,129 @@ export default function Home() {
     }
   };
 
+  const handleConnectKaikasMobile = async () => {
+    const prepareUrl = "https://api.kaikas.io/api/v1/k/prepare";
+    const body = {
+      bapp: { name: bappName },
+      type: KlipActionType.AUTH.valueOf(),
+    };
+    const header = {
+      "Content-Type": "application/json",
+    };
+
+    try {
+      const prepareResponse = await axios.post(prepareUrl, body, {
+        headers: header,
+      });
+      const { request_key } = prepareResponse.data;
+      if (!request_key) {
+        alert("카이카스 지갑 연결을 실패했습니다.");
+        throw new Error("카이카스 지갑 연결을 실패했습니다.");
+      }
+      setKaikasRequestKey(request_key);
+
+      const deeplinkUrl = `kaikas://wallet/api?request_key=${request_key}`;
+      window.location.href = deeplinkUrl;
+      // 앱 열렸는지 확인
+      checkInstallApp();
+
+      const resultCheckInterval = setInterval(() => {
+        checkKaikasAuthResult(request_key).then((res) => {
+          if (res) {
+            clearInterval(resultCheckInterval);
+          }
+        });
+      }, 3000);
+    } catch (error) {
+      alert("카이카스 지갑 연결을 실패했습니다.");
+    }
+  };
+
+  const checkInstallApp = () => {
+    let appOpened = false;
+
+    const clearTimers = () => {
+      clearInterval(check);
+      clearTimeout(timer);
+    };
+
+    const checkVisibility = () => {
+      if (document.visibilityState === "visible") {
+        if (appOpened) {
+          clearTimers();
+        } else {
+          alert("지갑 앱을 먼저 설치해주세요.");
+          clearTimers();
+        }
+      }
+    };
+
+    const check = setInterval(() => {
+      console.log(`check app opened: ${appOpened}`);
+      if (document.hidden) {
+        appOpened = true;
+      }
+    }, 200);
+
+    const timer = setTimeout(() => {
+      // if (!appOpened) {
+      checkVisibility();
+      clearTimers();
+      // }
+    }, 3000);
+
+    // document.addEventListener("visibilitychange", checkVisibility);
+  };
+
+  const checkKaikasAuthResult = async (requestKey: string) => {
+    if (!requestKey) {
+      return false;
+    }
+
+    try {
+      const response = await axios
+        .get(`https://api.kaikas.io/api/v1/k/result/${requestKey}`, {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        })
+        .then((res) => {
+          if (res.status !== 200) {
+            return false;
+          }
+
+          const result = res.data;
+          if (!result) {
+            return false;
+          }
+
+          if (result.status === "completed") {
+            const eoa = result.result?.klaytn_address;
+            if (!eoa) {
+              return false;
+            }
+
+            setAccount(eoa);
+            setConnectWalletModal(false);
+            setConnectWalletType(ConnectWalletType.KAIKAS);
+            const caver = new Caver(KLAYTN_ENNODE_MAINNET);
+            setCaver(caver);
+            setRefundModal(true);
+            return true;
+          } else {
+            return false;
+          }
+        })
+        .catch((err: any) => {
+          return false;
+        });
+
+      return response;
+    } catch (error) {
+      return false;
+    }
+  };
+
   const handleNotInstalledKaikas = () => {
     window.open(
       "https://chrome.google.com/webstore/detail/kaikas/jblndlipeogpafnldhgmapagcccfchpi"
@@ -185,6 +312,7 @@ export default function Home() {
 
       // deep link
       requestKlipDeeplink(requestKeyTmp);
+      checkInstallApp();
 
       // eoa 요청
       const resultCheckInterval = setInterval(() => {
@@ -321,10 +449,23 @@ export default function Home() {
         const traders = [];
         for (let i = 0; i < tokenUris.length; i++) {
           const tokenUri = tokenUris[i];
-          // const response = await axios.get(tokenUri); // TODO real
-          const response = await axios.get(
-            "https://metadata-store.klaytnapi.com/c3bca402-e5c0-38c3-48bd-cfdcf99ea681/fe407214-0604-f3cc-707e-a597de185401.json"
-          ); // TODO test
+          const response = await axios.get(tokenUri); // TODO real
+          // const response = await axios.get(
+          //   "https://metadata-store.klaytnapi.com/c3bca402-e5c0-38c3-48bd-cfdcf99ea681/9e4f3b82-b706-c4a4-dba7-727c9278065b.json"
+          // ); // TODO test -> 모멘텀 스켈퍼
+          // const response = await axios.get(
+          //   "https://metadata-store.klaytnapi.com/c3bca402-e5c0-38c3-48bd-cfdcf99ea681/a070bda2-334a-999a-9af0-5ec08eff1df4.json"
+          // ); // TODO test -> 흑구
+          // const response = await axios.get(
+          //   "https://metadata-store.klaytnapi.com/c3bca402-e5c0-38c3-48bd-cfdcf99ea681/21133b31-f7d6-26ac-37a7-251c2e7b879d.json"
+          // ); // TODO test -> 라이노
+          // const response = await axios.get(
+          //   "https://metadata-store.klaytnapi.com/c3bca402-e5c0-38c3-48bd-cfdcf99ea681/91c3ef4c-4007-4554-9d01-6b9d898f902a.json"
+          // ); // TODO test -> 멘탈리스트
+          // const response = await axios.get(
+          //   "https://metadata-store.klaytnapi.com/c3bca402-e5c0-38c3-48bd-cfdcf99ea681/16a3ea95-8b04-b413-d5a9-d9b6f11e2d15.json"
+          // ); // TODO test -> 박리다매
+
           const { attributes } = response.data;
           const trader = attributes.find(
             (attribute: any) => attribute.trait_type === "트레이더"
@@ -332,15 +473,14 @@ export default function Home() {
           traders.push(trader);
         }
 
-        // 모멘텀 스켈퍼 = 10451 KLAY, 박리다메 = 6197 KLAY, 멘탈리스크 = 5616 KLAY, 흑구 = 5424 KLAY, 라이노 = 5318 KLAY
         const refundAmounts = [];
         for (let i = 0; i < traders.length; i++) {
           const trader = traders[i];
           if (trader.value === "모멘텀 스켈퍼") {
             refundAmounts.push("353만 2438원");
-          } else if (trader.value === "박리다메") {
+          } else if (trader.value === "박리다매") {
             refundAmounts.push("209만 4586원");
-          } else if (trader.value === "멘탈리스크") {
+          } else if (trader.value === "멘탈리스트") {
             refundAmounts.push("189만 8208원");
           } else if (trader.value === "흑구") {
             refundAmounts.push("183만 3312원");
@@ -362,6 +502,7 @@ export default function Home() {
           tokens.push(token);
         }
 
+        setCheckedToken(null);
         setTokens(tokens);
       }
     } catch (error) {
@@ -440,49 +581,116 @@ export default function Home() {
       }
 
       if (connectWalletType === ConnectWalletType.KAIKAS) {
-        const overGasPrice = caver.utils.toPeb(gasPrice, "peb") * 1.05;
-        // transfer
-        await caver.klay
-          .sendTransaction({
-            type: "SMART_CONTRACT_EXECUTION",
-            from: account,
-            to: MAINNET_STAT_NFT_CONTRACT_ADDRESS,
-            data: statContract.methods
-              .safeTransferFrom(
+        if (isMobile) {
+          const prepareUrl = "https://api.kaikas.io/api/v1/k/prepare";
+          const header = {
+            "Content-Type": "application/json",
+          };
+          // abi 는 string으로
+          // ex) "{\\n  \\"constant\\": false,\\n  \\"inputs\\": [\\n    {\\n      \\"name\\": \\"_to\\",\\n      \\"type\\": \\"address\\"\\n    },\\n    {\\n      \\"name\\": \\"_value\\",\\n      \\"type\\": \\"uint256\\"\\n    }\\n  ],\\n  \\"name\\": \\"transfer\\",\\n  \\"outputs\\": [\\n    {\\n      \\"name\\": \\"\\",\\n      \\"type\\": \\"bool\\"\\n    }\\n  ],\\n  \\"payable\\": false,\\n  \\"stateMutability\\": \\"nonpayable\\",\\n  \\"type\\": \\"function\\"\\n}"
+          // safeTransferFrom(address,address,uint256)
+          const body = {
+            bapp: { name: bappName },
+            type: "execute_contract",
+            transaction: {
+              to: MAINNET_STAT_NFT_CONTRACT_ADDRESS,
+              abi: JSON.stringify({
+                constant: false,
+                inputs: [
+                  {
+                    name: "_from",
+                    type: "address",
+                  },
+                  {
+                    name: "_to",
+                    type: "address",
+                  },
+                  {
+                    name: "_tokenId",
+                    type: "uint256",
+                  },
+                ],
+                name: "safeTransferFrom",
+                outputs: [],
+                payable: false,
+                stateMutability: "nonpayable",
+                type: "function",
+              } as AbiItem),
+              value: "0",
+              params: JSON.stringify([
                 account,
                 STAT_REFUND_ACCOUNT_ADDRESS,
-                checkedToken.tokenId
-              )
-              .encodeABI(),
-            gas: gasLimit,
-            gasPrice: overGasPrice,
-          })
-          .on("transactionHash", (hash: any) => {
-            setIsLoading(true);
-          })
-          .on("receipt", async (receipt: any) => {
-            const requestResult = await requestPostEthAddress(
-              account,
-              inputAddress,
-              checkedToken.tokenId,
-              checkedToken.traderName
-            );
-            setIsLoading(false);
-            await updateToken();
-            if (!requestResult) {
-              return;
-            }
-            setCompletModal(true);
-          })
-          .on("error", (error: any) => {
-            setIsLoading(false);
-            if (error.code === -32603) {
-              alert("트랜잭션을 취소하셨습니다.");
-              return;
-            } else {
-              alert("환불 중 오류가 발생했습니다.");
-            }
+                checkedToken.tokenId,
+              ]),
+            },
+          };
+          const prepareResponse = await axios.post(prepareUrl, body, {
+            headers: header,
           });
+          const { request_key } = prepareResponse.data;
+          console.log("request_key", prepareResponse.data);
+          if (!request_key) {
+            alert("카이카스 지갑 연결을 실패했습니다.");
+            throw new Error("카이카스 지갑 연결을 실패했습니다.");
+          }
+
+          const deeplinkUrl = `kaikas://wallet/api?request_key=${request_key}`;
+          window.location.href = deeplinkUrl;
+          setIsLoading(true);
+
+          const resultCheckInterval = setInterval(() => {
+            checkKaikasResult(request_key).then((res) => {
+              if (res) {
+                setIsLoading(false);
+                clearInterval(resultCheckInterval);
+              }
+            });
+          }, 3000);
+        } else {
+          const overGasPrice = caver.utils.toPeb(gasPrice, "peb") * 1.05;
+          // transfer
+          await caver.klay
+            .sendTransaction({
+              type: "SMART_CONTRACT_EXECUTION",
+              from: account,
+              to: MAINNET_STAT_NFT_CONTRACT_ADDRESS,
+              data: statContract.methods
+                .safeTransferFrom(
+                  account,
+                  STAT_REFUND_ACCOUNT_ADDRESS,
+                  checkedToken.tokenId
+                )
+                .encodeABI(),
+              gas: gasLimit,
+              gasPrice: overGasPrice,
+            })
+            .on("transactionHash", (hash: any) => {
+              setIsLoading(true);
+            })
+            .on("receipt", async (receipt: any) => {
+              const requestResult = await requestPostEthAddress(
+                account,
+                inputAddress,
+                checkedToken.tokenId,
+                checkedToken.traderName
+              );
+              setIsLoading(false);
+              await updateToken();
+              if (!requestResult) {
+                return;
+              }
+              setCompletModal(true);
+            })
+            .on("error", (error: any) => {
+              setIsLoading(false);
+              if (error.code === -32603) {
+                alert("트랜잭션을 취소하셨습니다.");
+                return;
+              } else {
+                alert("환불 중 오류가 발생했습니다.");
+              }
+            });
+        }
       } else if (connectWalletType === ConnectWalletType.KLIP) {
         // prepare -> request -> result
         /*  prepare curl 예시, axios로 변환
@@ -520,6 +728,7 @@ export default function Home() {
         });
 
         const { request_key } = prepareResponse.data;
+
         if (!request_key) {
           alert("클립 지갑 연결을 실패했습니다.");
           throw new Error("클립 지갑 연결을 실패했습니다.");
@@ -541,6 +750,60 @@ export default function Home() {
     } catch (error) {
       setIsLoading(false);
       alert("환불 중 오류가 발생했습니다. 다시 시도해주세요.");
+    }
+  };
+
+  const checkKaikasResult = async (requestKey: string) => {
+    if (!requestKey) {
+      return false;
+    }
+
+    try {
+      const response = await axios
+        .get(`https://api.kaikas.io/api/v1/k/result/${requestKey}`, {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        })
+        .then(async (res) => {
+          if (res.status !== 200) {
+            return false;
+          }
+
+          const result = res.data;
+          if (!result) {
+            return false;
+          }
+
+          if (result.status === "completed") {
+            if (!checkedToken) {
+              throw new Error(
+                "환불 신청에 실패했습니다. 스탯 공식 디스코드로 문의해주세요."
+              );
+            }
+            const requestResult = await requestPostEthAddress(
+              account,
+              inputAddress,
+              checkedToken?.tokenId,
+              checkedToken?.traderName
+            );
+            if (!requestResult) {
+              return false;
+            }
+            await updateToken();
+            setCompletModal(true);
+            // 성공
+            return true;
+          } else {
+            return false;
+          }
+        })
+        .catch((err: any) => {
+          return false;
+        });
+      return response;
+    } catch (error) {
+      return false;
     }
   };
 
@@ -681,6 +944,12 @@ export default function Home() {
     }
   };
 
+  const handleOutRefundModal = () => {
+    setRefundModal(false);
+    setCheckedToken(null);
+    setInputAddress("");
+  };
+
   return (
     <NextUIProvider>
       <main className="flex flex-col min-w-screen w-full font-pretendard min-h-[1047px] py-[50px] px-[30px] gap-[10px] justify-center items-center bg-[#121212]">
@@ -747,7 +1016,7 @@ export default function Home() {
               </tr>
               <tr className="flex border-b border-white">
                 <td className="w-1/4 flex justify-center items-center p-[10px] border-r border-white">
-                  박리다메
+                  박리다매
                 </td>
                 <td className="w-1/4 flex justify-center items-center p-[10px] border-r border-white">
                   6197<span className="ml-1 font-normal">KLAY</span>
@@ -759,7 +1028,7 @@ export default function Home() {
               </tr>
               <tr className="flex border-b border-white">
                 <td className="w-1/4 flex justify-center items-center p-[10px] border-r border-white">
-                  멘탈리스크
+                  멘탈리스트
                 </td>
                 <td className="w-1/4 flex justify-center items-center p-[10px] border-r border-white">
                   5616<span className="ml-1 font-normal">KLAY</span>
@@ -814,7 +1083,7 @@ export default function Home() {
                 </span>
                 <div className="flex w-full h-full max-h-[300px] px-[10px] space-x-[20px] items-center">
                   <button
-                    onClick={() => handleConnectKaikas()}
+                    onClick={() => handleConnectKaikasBtn()}
                     className="flex flex-col justify-center items-center rounded-[10px] bg-[#D9D9D9] h-full w-full space-y-[30px]"
                   >
                     <div className="w-[86.202px] h-[71.938px] flex justify-center items-center">
@@ -853,7 +1122,7 @@ export default function Home() {
         {/* wallet connect modal */}
         {refundModal && (
           <div
-            onClick={() => setRefundModal(false)}
+            onClick={() => handleOutRefundModal()}
             className={
               "fixed top-0 left-0 w-full h-full z-50 bg-center bg-lightgray bg-cover bg-no-repeat bg-[url('/modal_background_img.png')] flex justify-center" +
               " " +
@@ -1029,7 +1298,7 @@ export default function Home() {
                 >
                   {/* 취소하기 */}
                   <button
-                    onClick={() => setRefundModal(false)}
+                    onClick={() => handleOutRefundModal()}
                     className="min-w-[124px] flex justify-center items-center h-[60px] py-[18px] px-[26px] text-[20px] font-[700] text-[#808080]"
                   >
                     취소하기
