@@ -18,7 +18,7 @@ declare global {
 }
 
 // klip
-const bappName = "STAT NFT REFUND";
+const bappName = "STAT Top Trader Card REFUND";
 
 enum KlipActionType {
   AUTH = "auth",
@@ -51,7 +51,7 @@ const STAT_REFUND_ACCOUNT_ADDRESS =
   "0x138fbb060fa77887b8dd1888407ca7b1ce24dc83"; //TODO real address
 
 const startDate = dayjs("2023-12-15T17:00:00+09:00").unix();
-const endDate = dayjs("2023-12-31T17:00:00+09:00").unix();
+const endDate = dayjs("2024-01-31T17:00:00+09:00").unix();
 
 export default function Home() {
   const [connectWalletModal, setConnectWalletModal] = useState(false);
@@ -68,9 +68,9 @@ export default function Home() {
   const [checkedToken, setCheckedToken] = useState<StatNFT | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [completModal, setCompletModal] = useState(false);
-  const [inputAddress, setInputAddress] = useState("");
+  const [inputAddress, setInputAddress] = useState(""); // TODO: test, if real, ""
 
-  const [isDate, setIsDate] = useState(false); // TODO: false
+  const [isDate, setIsDate] = useState(false); // TODO: real is false
 
   useEffect(() => {
     const now = dayjs().unix();
@@ -108,10 +108,10 @@ export default function Home() {
                 params: [{ chainId: "0x2019" }],
               })
               .then((res: any) => {
-                console.log("res", res);
+                // console.log("res", res);
               })
               .catch((err: any) => {
-                console.error("err", err);
+                // console.error("err", err);
                 const { code } = err;
                 if (code === 4001) {
                   alert("메인넷에서만 환불이 가능합니다.");
@@ -204,7 +204,7 @@ export default function Home() {
     };
 
     const check = setInterval(() => {
-      console.log(`check app opened: ${appOpened}`);
+      // console.log(`check app opened: ${appOpened}`);
       if (document.hidden) {
         appOpened = true;
       }
@@ -426,7 +426,7 @@ export default function Home() {
         const tokenBalance = await statContract.methods
           .balanceOf(account)
           .call();
-        console.log("tokenBalance", tokenBalance);
+        // console.log("tokenBalance", tokenBalance);
 
         const tokenIds = [];
         for (let i = 0; i < tokenBalance; i++) {
@@ -628,7 +628,7 @@ export default function Home() {
             headers: header,
           });
           const { request_key } = prepareResponse.data;
-          console.log("request_key", prepareResponse.data);
+          // console.log("request_key", prepareResponse.data);
           if (!request_key) {
             alert("카이카스 지갑 연결을 실패했습니다.");
             throw new Error("카이카스 지갑 연결을 실패했습니다.");
@@ -955,19 +955,17 @@ export default function Home() {
       <main className="flex flex-col min-w-screen w-full font-pretendard min-h-[1047px] py-[50px] px-[30px] gap-[10px] justify-center items-center bg-[#121212]">
         <div className="min-w-[349px] w-full max-w-[1000px] min-h-[368px] max-h-[920px]">
           <Image
-            src="/main_image2.png"
+            src="/main_image3.png"
             alt="main"
-            width={4096}
-            height={3750}
+            width={6560}
+            height={6602}
             quality={100}
           ></Image>
         </div>
         <div className="w-full flex items-center justify-center py-[20px]">
           <p className="text-white text-center text-sm font-normal leading-[16px]">
             그동안 탑트레이더 카드를 사랑해주셔서 감사합니다.
-            <br /> 곧{" "}
-            <span className="font-bold">새로운 스탯 트레이더 카드</span>로
-            돌아오겠습니다.
+            <br /> 곧 새로운 서비스로 리뉴얼하여 돌아오겠습니다.
           </p>
         </div>
 
@@ -1079,7 +1077,7 @@ export default function Home() {
             >
               <div className="bg-[#16191F] w-full h-full rounded-[15px] flex flex-col justify-center items-center py-[40px] px-[20px] space-y-[59px]">
                 <span className="text-white text-center text-[18px] font-normal leading-normal mx-[40px]">
-                  Stat NFT를 보유하고 있는 지갑을 선택해주세요.
+                  STAT Top Trader Card를 보유하고 있는 지갑을 선택해주세요.
                 </span>
                 <div className="flex w-full h-full max-h-[300px] px-[10px] space-x-[20px] items-center">
                   <button
@@ -1167,13 +1165,19 @@ export default function Home() {
                 </div>
                 {/* 환불안내 */}
                 <div className="flex flex-col items-center space-y-[10px] w-full">
-                  <span className="px-[30px] w-full text-white text-[20px] font-[700]">
-                    • STAT NFT 환불 안내
+                  <span
+                    className={
+                      "px-[30px] w-full text-white font-[700]" +
+                      " " +
+                      (isMobile ? "text-[16px]" : "text-[20px]")
+                    }
+                  >
+                    • STAT Top Trader Card 환불 안내
                   </span>
                   <span className="px-[30px] w-full text-white text-[14px] font-[300] leading-[25px]">
-                    1. 환불한 NFT는{" "}
-                    <span className="font-[500]">2024년 1월</span>부터
-                    순차적으로 환불될 예정입니다.
+                    1. 환불 접수된 NFT는{" "}
+                    <span className="font-[500]">환불 접수 기간 종료 직후</span>
+                    순차적으로 환불됩니다.
                     <br />
                     2. 환불을 위해{" "}
                     <span className="font-[500]">이더리움 지갑 주소</span>를
@@ -1186,8 +1190,14 @@ export default function Home() {
                 {/* 이더리움 지갑 주소 입력창 */}
                 <div className="flex flex-col max-w-[580px] w-full px-[30px] pt-[4px] pb-[4px] items-center justify-center space-y-[8px]">
                   <div className="w-full flex items-center space-x-[10px]">
-                    <span className="text-white text-[20px] font-[700]">
-                      • 이더리움 지갑 주소
+                    <span
+                      className={
+                        "text-white font-[700]" +
+                        " " +
+                        (isMobile ? "text-[16px]" : "text-[20px]")
+                      }
+                    >
+                      • USDT 환불 이더리움 지갑 주소
                     </span>
                     <div className="flex w-[34px] h-[16px] justify-center items-center rounded-[5px] bg-[#FF5A5A] bg-opacity-[20%]">
                       <span className="text-center text-[12px] font-[700] text-[#FF5A5A]">
@@ -1219,7 +1229,7 @@ export default function Home() {
                         (isMobile ? "h-[30px]" : "h-[40px]")
                       }
                     >
-                      보유 STAT NFT 번호
+                      보유 Top Trader Card 번호
                     </span>
                     <div className="w-full min-h-[0.5px] bg-white mt-[2px] mb-[10px]" />
                     <div className="flex flex-col w-full -space-y-[10px] max-h-[100px]">

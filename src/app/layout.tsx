@@ -9,8 +9,8 @@ const pretendard = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "STAT NFT REFUND",
-  description: "STAT NFT REFUND",
+  title: "STAT Top Trader Card REFUND",
+  description: "This website is for STAT Top Trader Card REFUND",
 };
 
 export default function RootLayout({
