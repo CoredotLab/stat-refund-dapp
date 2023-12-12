@@ -950,10 +950,6 @@ export default function Home() {
     setInputAddress("");
   };
 
-  useEffect(() => {
-    console.log("is mobile", isMobile);
-  }, [isMobile]);
-
   return (
     <NextUIProvider>
       <main className="flex flex-col min-w-screen w-full font-pretendard min-h-[1047px] py-[50px] px-[30px] gap-[10px] justify-center items-center bg-[#121212]">
