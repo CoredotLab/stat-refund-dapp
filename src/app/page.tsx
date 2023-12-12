@@ -955,7 +955,7 @@ export default function Home() {
       <main className="flex flex-col min-w-screen w-full font-pretendard min-h-[1047px] py-[50px] px-[30px] gap-[10px] justify-center items-center bg-[#121212]">
         <div className="min-w-[349px] w-full max-w-[1000px] min-h-[368px] max-h-[920px]">
           <Image
-            src="/main_image3.png"
+            src={isMobile ? "/main_image4.png" : "/main_image3.png"}
             alt="main"
             width={6560}
             height={6602}
