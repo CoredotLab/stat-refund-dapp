@@ -1187,7 +1187,9 @@ export default function Home() {
                   </span>
                   <span className="px-[30px] w-full text-white text-[14px] font-[300] leading-[25px]">
                     1. 환불 접수된 NFT는{" "}
-                    <span className="font-[500]">환불 접수 기간 종료 직후</span>
+                    <span className="font-[500]">
+                      환불 접수 기간 종료 직후{" "}
+                    </span>
                     순차적으로 환불됩니다.
                     <br />
                     2. 환불을 위해{" "}
