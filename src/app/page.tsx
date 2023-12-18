@@ -580,6 +580,20 @@ export default function Home() {
         return;
       }
 
+      // api 먼저 호출
+      const requestResult = await requestPostEthAddress(
+        account,
+        inputAddress,
+        checkedToken.tokenId,
+        checkedToken.traderName
+      );
+
+      console.log("requestResult", requestResult);
+
+      if (!requestResult) {
+        return;
+      }
+
       if (connectWalletType === ConnectWalletType.KAIKAS) {
         if (isMobile) {
           const prepareUrl = "https://api.kaikas.io/api/v1/k/prepare";
@@ -668,17 +682,17 @@ export default function Home() {
               setIsLoading(true);
             })
             .on("receipt", async (receipt: any) => {
-              const requestResult = await requestPostEthAddress(
-                account,
-                inputAddress,
-                checkedToken.tokenId,
-                checkedToken.traderName
-              );
+              // const requestResult = await requestPostEthAddress(
+              //   account,
+              //   inputAddress,
+              //   checkedToken.tokenId,
+              //   checkedToken.traderName
+              // );
               setIsLoading(false);
               await updateToken();
-              if (!requestResult) {
-                return;
-              }
+              // if (!requestResult) {
+              //   return;
+              // }
               setCompletModal(true);
             })
             .on("error", (error: any) => {
@@ -781,15 +795,15 @@ export default function Home() {
                 "환불 신청에 실패했습니다. 스탯 공식 디스코드로 문의해주세요."
               );
             }
-            const requestResult = await requestPostEthAddress(
-              account,
-              inputAddress,
-              checkedToken?.tokenId,
-              checkedToken?.traderName
-            );
-            if (!requestResult) {
-              return false;
-            }
+            // const requestResult = await requestPostEthAddress(
+            //   account,
+            //   inputAddress,
+            //   checkedToken?.tokenId,
+            //   checkedToken?.traderName
+            // );
+            // if (!requestResult) {
+            //   return false;
+            // }
             await updateToken();
             setCompletModal(true);
             // 성공
@@ -856,15 +870,15 @@ export default function Home() {
                   "환불 신청에 실패했습니다. 스탯 공식 디스코드로 문의해주세요."
                 );
               }
-              const requestResult = await requestPostEthAddress(
-                account,
-                inputAddress,
-                checkedToken?.tokenId,
-                checkedToken?.traderName
-              );
-              if (!requestResult) {
-                return false;
-              }
+              // const requestResult = await requestPostEthAddress(
+              //   account,
+              //   inputAddress,
+              //   checkedToken?.tokenId,
+              //   checkedToken?.traderName
+              // );
+              // if (!requestResult) {
+              //   return false;
+              // }
               await updateToken();
               setCompletModal(true);
               // 성공
