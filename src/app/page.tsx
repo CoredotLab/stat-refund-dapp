@@ -8,6 +8,7 @@ import axios from "axios";
 import { CircularProgress } from "@nextui-org/react";
 import { NextUIProvider } from "@nextui-org/react";
 import StatNFTABI from "../StatNFTABI.json";
+import dayjs from "dayjs";
 
 declare global {
   interface Window {
@@ -49,6 +50,9 @@ const MAINNET_STAT_NFT_CONTRACT_ADDRESS =
 const STAT_REFUND_ACCOUNT_ADDRESS =
   "0x138fbb060fa77887b8dd1888407ca7b1ce24dc83"; //TODO real address
 
+const startDate = dayjs("2023-12-15T17:00:00+09:00").unix();
+const endDate = dayjs("2023-12-31T17:00:00+09:00").unix();
+
 export default function Home() {
   const [connectWalletModal, setConnectWalletModal] = useState(false);
   const [account, setAccount] = useState("");
@@ -64,6 +68,15 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [completModal, setCompletModal] = useState(false);
   const [inputAddress, setInputAddress] = useState("");
+
+  const [isDate, setIsDate] = useState(false);
+
+  useEffect(() => {
+    const now = dayjs().unix();
+    if (now >= startDate && now <= endDate) {
+      setIsDate(true);
+    }
+  }, []);
 
   const handleConnectKaikas = async () => {
     // 모바일에서는 안됨
@@ -243,6 +256,11 @@ export default function Home() {
   };
 
   const handleConnectWalletBtn = () => {
+    // 시간 체크
+    if (!isDate) {
+      alert("환불 기간이 아닙니다.");
+      return;
+    }
     setConnectWalletModal(true);
   };
 
