@@ -51,7 +51,14 @@ const STAT_REFUND_ACCOUNT_ADDRESS =
   "0x138fbb060fa77887b8dd1888407ca7b1ce24dc83"; //TODO real address
 
 const startDate = dayjs("2023-12-15T17:00:00+09:00").unix();
-const endDate = dayjs("2024-01-31T17:00:00+09:00").unix();
+const endDate = dayjs("2024-02-19T17:00:00+09:00").unix();
+
+
+type RefundHistory = {
+  nftId: string;
+  traderName: string;
+  ercWalletAddress: string;
+}
 
 export default function Home() {
   const [connectWalletModal, setConnectWalletModal] = useState(false);
@@ -71,6 +78,8 @@ export default function Home() {
   const [inputAddress, setInputAddress] = useState(""); // TODO: test, if real, ""
 
   const [isDate, setIsDate] = useState(false); // TODO: real is false
+
+  const [refundHistories, setRefundHistories] = useState<RefundHistory[]>([]);
 
   useEffect(() => {
     const now = dayjs().unix();
@@ -964,13 +973,55 @@ export default function Home() {
     setInputAddress("");
   };
 
+  /*
+  GET: https://stat-live-api.shop:8080/refundHistory
+    200 'success': True, 'result': []    <- 정상 값
+    400 'success': False, 'message': {exception message}  <- 실패
+
+    Query parameters
+    kipWalletAddress-> 유저가 사용한 kip wallet 주소
+
+    Response
+    {"success": true, "result": [...]
+  */
+  const getRefundHistory = async (account: string) => {
+    const url = `https://stat-live-api.shop:8080/refundHistory?kipWalletAddress=${account}`;
+    try {
+      const response = await axios.get(url);
+      if (response.status === 200) {
+        const result = response.data.result;
+
+        if (result.length > 0) {
+          const refundHistory = result.map((item: any) => {
+            const { ercWalletAddress, nftId, traderName } = item;
+            return {
+              ercWalletAddress,
+              nftId,
+              traderName,
+            };
+          });
+          
+          setRefundHistories(refundHistory);
+        }
+      }
+    } catch (error) {
+      
+    }
+  }
+
+  useEffect(() => {
+    if (account) {
+      getRefundHistory(account); 
+    }
+  }, [account]);
+
   return (
     <NextUIProvider>
       <main className="flex flex-col min-w-screen w-full font-pretendard min-h-[1047px] py-[50px] px-[30px] gap-[10px] justify-center items-center bg-[#121212]">
         <div className="min-w-[349px] w-full max-w-[1000px] min-h-[368px] max-h-[920px]">
           <div className="w-full h-full md:flex hidden">
             <Image
-              src="/main_image4.png"
+              src="/main_image5.png"
               alt="main"
               width={6560}
               height={6602}
@@ -979,7 +1030,7 @@ export default function Home() {
           </div>
           <div className="w-full h-full md:hidden flex">
             <Image
-              src="/main_image4.png"
+              src="/main_image5.png"
               alt="main"
               width={6560}
               height={6602}
@@ -1156,7 +1207,7 @@ export default function Home() {
               onClick={(e) => {
                 e.stopPropagation();
               }}
-              className="max-w-[600px] w-full min-w-[320px] z-50 bg-gradient-to-r from-[#5DE7E7] via-[#5D9DF7] to-[#A05DF7] rounded-[15px] shadow-none p-[1px]"
+              className="max-w-[600px] w-full min-w-[320px] z-50 bg-gradient-to-r from-[#5DE7E7] via-[#5D9DF7] to-[#A05DF7] rounded-[15px] shadow-none p-[1px] max-h-screen overflow-y-auto"
             >
               <div
                 className={
@@ -1351,6 +1402,54 @@ export default function Home() {
                   >
                     환불하기
                   </button>
+                </div>
+                {/* 환불 히스토리 */}
+                <div
+                  className={
+                    "flex flex-col w-full space-y-[10px] px-[30px] pb-[20px]" +
+                    " " +
+                    (isMobile ? "h-[160px]" : "h-[231px]")
+                  }
+                >
+                  <div className="flex flex-col w-full min-w-[280px] py-[10px] px-[20px] justify-start items-center rounded-[10px] bg-[#0A0A0A] h-full overflow-y-auto">
+                    <span
+                      className={
+                        "text-white flex items-center text-[16px] font-[400] leading-[40px]" +
+                        " " +
+                        (isMobile ? "h-[30px]" : "h-[40px]")
+                      }
+                    >
+                      환불 히스토리 ({refundHistories.length})
+                    </span>
+                    <div className="w-full min-h-[0.5px] bg-white mt-[2px] mb-[10px]" />
+                    <div className="flex flex-col w-full -space-y-[10px] max-h-[100px]">
+                      {
+                        refundHistories.map((history, index) => {
+                          return (
+                            <div
+                              key={index}
+                              className="flex text-[13px] justify-between items-center w-full min-h-[40px] text-white space-x-[10px]"
+                            >
+                              <div className="flex flex-row space-x-[10px]">
+                              <span className="font-[400] ">
+                                {index + 1}{" "}
+                              </span>
+                              <span className="font-[400] ">
+                                #{getFormattedTokenId(Number(history.nftId))}{" "}
+                              </span>
+                                </div>
+                              <span className="font-[400] ">
+                                {history.traderName}{" "}
+                              </span>
+                              <span className="font-[400] ">
+                                {shortenAddress(history.ercWalletAddress)}{" "}
+                              </span>
+                            </div>
+                          );
+                        })
+                      }
+                    </div>
+                  </div>
                 </div>
                 {/* 로딩 */}
                 {isLoading && (
