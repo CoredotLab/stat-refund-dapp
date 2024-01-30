@@ -1451,6 +1451,25 @@ export default function Home() {
                     </div>
                   </div>
                 </div>
+                {/* 안내 문구 */}
+                <div className="flex flex-col w-full space-y-[5px]">
+                  {/* 선 */}
+                  <div className="w-full flex items-center justify-center p-[10px]">
+                    <div className="w-full h-[1px] bg-white" />
+                  </div>
+                  {/* 안내 문구 */}
+                  <div className="flex flex-col w-full px-[20px] space-y-[5px]">
+                    <span
+                      className={
+                        "text-white flex items-center text-[14px] font-[300] leading-[25px]" +
+                        " " +
+                        (isMobile ? "text-[12px]" : "text-[14px]")
+                      }
+                    >
+                      환불 지갑 변경 및 오류는 help@statproject.io 로 문의 주시기 바랍니다.
+                    </span>
+                  </div>
+                </div>
                 {/* 로딩 */}
                 {isLoading && (
                   <div
