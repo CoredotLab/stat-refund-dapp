@@ -51,7 +51,7 @@ const STAT_REFUND_ACCOUNT_ADDRESS =
   "0x138fbb060fa77887b8dd1888407ca7b1ce24dc83"; //TODO real address
 
 const startDate = dayjs("2023-12-15T17:00:00+09:00").unix();
-const endDate = dayjs("2024-02-22T:00:00+09:00").unix();
+const endDate = dayjs("2024-02-22T00:00:00+09:00").unix();
 
 type RefundHistory = {
   nftId: string;
