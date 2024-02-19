@@ -51,14 +51,13 @@ const STAT_REFUND_ACCOUNT_ADDRESS =
   "0x138fbb060fa77887b8dd1888407ca7b1ce24dc83"; //TODO real address
 
 const startDate = dayjs("2023-12-15T17:00:00+09:00").unix();
-const endDate = dayjs("2024-02-19T17:00:00+09:00").unix();
-
+const endDate = dayjs("2024-02-22T:00:00+09:00").unix();
 
 type RefundHistory = {
   nftId: string;
   traderName: string;
   ercWalletAddress: string;
-}
+};
 
 export default function Home() {
   const [connectWalletModal, setConnectWalletModal] = useState(false);
@@ -1000,18 +999,17 @@ export default function Home() {
               traderName,
             };
           });
-          
+
           setRefundHistories(refundHistory);
         }
       }
-    } catch (error) {
-      
-    }
-  }
+    } catch (error) {}
+  };
 
   useEffect(() => {
     if (account) {
-      getRefundHistory(account); 
+      console.log("account", account);
+      getRefundHistory(account);
     }
   }, [account]);
 
@@ -1423,31 +1421,27 @@ export default function Home() {
                     </span>
                     <div className="w-full min-h-[0.5px] bg-white mt-[2px] mb-[10px]" />
                     <div className="flex flex-col w-full -space-y-[10px] max-h-[100px]">
-                      {
-                        refundHistories.map((history, index) => {
-                          return (
-                            <div
-                              key={index}
-                              className="flex text-[13px] justify-between items-center w-full min-h-[40px] text-white space-x-[10px]"
-                            >
-                              <div className="flex flex-row space-x-[10px]">
-                              <span className="font-[400] ">
-                                {index + 1}{" "}
-                              </span>
+                      {refundHistories.map((history, index) => {
+                        return (
+                          <div
+                            key={index}
+                            className="flex text-[13px] justify-between items-center w-full min-h-[40px] text-white space-x-[10px]"
+                          >
+                            <div className="flex flex-row space-x-[10px]">
+                              <span className="font-[400] ">{index + 1} </span>
                               <span className="font-[400] ">
                                 #{getFormattedTokenId(Number(history.nftId))}{" "}
                               </span>
-                                </div>
-                              <span className="font-[400] ">
-                                {history.traderName}{" "}
-                              </span>
-                              <span className="font-[400] ">
-                                {shortenAddress(history.ercWalletAddress)}{" "}
-                              </span>
                             </div>
-                          );
-                        })
-                      }
+                            <span className="font-[400] ">
+                              {history.traderName}{" "}
+                            </span>
+                            <span className="font-[400] ">
+                              {shortenAddress(history.ercWalletAddress)}{" "}
+                            </span>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
@@ -1466,7 +1460,8 @@ export default function Home() {
                         (isMobile ? "text-[12px]" : "text-[14px]")
                       }
                     >
-                      환불 지갑 변경 및 오류는 help@statproject.io 로 문의 주시기 바랍니다.
+                      환불 지갑 변경 및 오류는 help@statproject.io 로 문의
+                      주시기 바랍니다.
                     </span>
                   </div>
                 </div>
