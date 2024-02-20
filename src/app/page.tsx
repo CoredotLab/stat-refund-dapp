@@ -1019,7 +1019,7 @@ export default function Home() {
         <div className="min-w-[349px] w-full max-w-[1000px] min-h-[368px] max-h-[920px]">
           <div className="w-full h-full md:flex hidden">
             <Image
-              src="/main_image5.png"
+              src="/main_image6.png"
               alt="main"
               width={6560}
               height={6602}
